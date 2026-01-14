@@ -1,0 +1,3256 @@
+10
+
+Deep Learning
+
+This chapter covers the important topic of deep learning. At the time of deep writing(2020),deep learning is a very active area of research in the machine learning and artificial intelligence communities. The cornerstone of deep learning is the neural network.
+
+
+Neural networks rose to fame in the late 1980s. There was a lot of excitement and a certain amount of hype associated with this approach,and they were the impetus for the popular Neural Information Processing Systems meetings (Neur IPS, formerly NIPS) held every year, typically in exotic places like ski resorts. This was followed by a synthesis stage, where the properties of neural networks were analyzed by machine learners, math- ematicians and statisticians; algorithms were improved, and the method- ology stabilized. Then along came SVMs, boosting, and random forests, and neural networks fell somewhat from favor. Part of the reason was that neural networks required a lot of tinkering, while the new methods were more automatic. Also, on many problems the new methods outperformed poorly-trainedneuralnetworks.Thiswasthestatusquoforthefirstdecade in the new millennium.
+
+All the while, though, a core group of neural-network enthusiasts were pushingtheirtechnologyharderonever-largercomputingarchitecturesand data sets. Neural networks resurfaced after 2010 with the new name deep learning,withnewarchitectures,additionalbellsandwhistles,andastring of success stories on some niche problems such as image and video classifi- cation, speech and text modeling. Many in the field believe that the major reasonforthesesuccessesistheavailabilityofever-largertrainingdatasets, made possible by the wide-scale use of digitization in science and industry.
+
+In this chapter we discuss the basics of neural networks and deep learning, and then go into some of the specializations for specific problems, such as convolutional neural networks (CNNs) for image classification, and re- current neural networks (RNNs) for time series and other sequences. We
+
+© Springer Nature Switzerland AG 2023 399
+
+G. James et al., An Introduction to Statistical Learning, Springer Texts in Statistics, https://doi.org/10.1007/978-3-031-38747-0_10
+
+400 10. Deep Learning
+
+Input Hidden Output
+
+Layer Layer Layer
+
+A1
+
+X1
+
+A2
+
+X2
+
+A3 f(X) Y
+
+X3
+
+A4
+
+X4
+
+A5
+
+FIGURE 10.1. Neural network with a single hidden layer. The hidden layer computes activations A k = h k (X) that are nonlinear transformations of linear combinations of the inputs X 1 ,X 2 ,...,X p. Hence these A k are not directly ob- served. The functions h k () are not fixed in advance, but are learned during the
+
+· training of the network. The output layer is a linear model that uses these acti- vations A k as inputs, resulting in a function f(X).
+
+will also demonstrate these models using the Python torch package, along with a number of helper packages.
+
+The material in this chapter is slightly more challenging than elsewhere in this book.
+
+10.1 Single Layer Neural Networks
+
+A neural network takes an input vector of p variables X =(X ,X ,...,X )
+
+1 2 p and builds a nonlinear function f(X) to predict the response Y. We have built nonlinear prediction models in earlier chapters, using trees, boosting and generalized additive models. What distinguishes neural networks from these methods is the particular structure of the model. Figure 10.1 shows a simple feed-forward neural network for modeling a quantitative response feed-forward using p=4 predictors.In the terminology of neural networks,the four features X ,...,X make up the units in the input layer. The arrows indicate
+
+1 4 network that each of the inputs from the input layer feeds into each of the K hidden input layer units (we get to pick K; here we chose 5). The neural network model has hiddenunits the form f(X) = β + K β h (X)
+
+0 k=1 k k
+
+(10.1)
+
+= β +)K β g(w + p w X ).
+
+0 k=1 k k 0 j=1 kj j
+
+It is built up here in two steps.Firstthe K activations A , k =1,...,K,in k activations the hidden layer are computed as functions of the input features X ,...,X ,
+
+1 p
+
+A =h (X)=g(w + p w X ), (10.2) k k k 0 j=1 kj j
+
+)
+
+10.1 Single Layer Neural Networks 401
+
+−4 −2 0 2 4
+
+0.1
+
+8.0
+
+6.0
+
+4.0
+
+2.0
+
+0.0 z
+
+)z(g sigmoid
+
+Re LU
+
+FIGURE10.2.Activationfunctions.The piece wise-linear Re LUfunctionispopular for its efficiency and computability. We have scaled it down by a factor of five for ease of comparison.
+
+where g(z) is a nonlinear activation function that is specified in advance.
+
+activation
+
+Wecanthinkofeach A asadifferenttransformationh (X)oftheoriginal k k function features, much like the basis functions of Chapter 7. These K activations from the hidden layer then feed into the output layer, resulting in
+
+K f(X)=β + β A , (10.3)
+
+0 k k k=1
+
+0 a linear regression model in the K = 5 activations. All the parameters
+
+β ,...,β and w ,...,w need to be estimated from data. In the early
+
+0 K 10 Kp instances of neural networks, the sigmoid activation function was favored, sigmoid ez 1 g(z)= = , (10.4)
+
+1+ez 1+e z
+
+− which is the same function used in logistic regression to convert a linear function into probabilities between zero and one (see Figure 10.2). The preferred choice in modern neural networks is the Re LU (rectified linear
+
+Re LU unit) activation function, which takes the form rectified
+
+0 if z <0 linearunit g(z)=(z) = (10.5)
+
++ z otherwise.
+
+K
+
+A Re LU activation can be computed and stored more efficiently than a sigmoidactivation.Althoughitthresholdsatzero,becauseweapplyittoa linear function (10.2) the constant term w will shift this inflection point.
+
+k 0
+
+So in words, the model depicted in Figure 10.1 derives five new features by computing five different linear combinations of X, and then squashes each through an activation function g() to transform it. The final model
+
+· is linear in these derived variables.
+
+Thenameneuralnetworkoriginallyderivedfromthinkingofthesehidden units as analogous to neurons in the brain — values of the activations
+
+A = h (X) close to one are firing, while those close to zero are silent k k
+
+(using the sigmoid activation function).
+
+Thenonlinearityintheactivationfunctiong()isessential,sincewithout
+
+· it the model f(X) in (10.1) would collapse into a simple linear model in
+
+402 10. Deep Learning
+
+X ,...,X . Moreover, having a nonlinear activation function allows the
+
+1 p model to capture complex nonlinearities and interaction effects. Consider a very simple example with p = 2 input variables X = (X ,X ), and
+
+1 2
+
+K =2 hiddenunitsh (X)andh (X)withg(z)=z 2.Wespecifytheother
+
+1 2 parameters as
+
+β =0, β = 1, β = 1,
+
+0 1 4 2 −4 w =0, w =1, w = 1, (10.6)
+
+10 11 12 w =0, w =1, w = 1.
+
+20 21 22
+
+−
+
+From (10.2), this means that h (X) = (0+X +X )2,
+
+1 1 2 (10.7) h (X) = (0+X X )2.
+
+2 1 2
+
+−
+
+Then plugging (10.7) into (10.1), we get f(X) = 0+ 1 (0+X +X )2 1 (0+X X )2
+
+4 · 1 2 − 4 · 1 − 2
+
+= 1 (X +X )2 (X X )2 (10.8)
+
+4 1 2 − 1 − 2
+
+= X X .
+
+1 2
+
+N O
+
+So the sum of two nonlinear transformations of linear functions can give us an interaction! In practice we would not use a quadratic function for g(z), since we would always get a second-degree polynomial in the original coordinates X ,...,X .Thesigmoidor Re LUactivationsdonothavesuch
+
+1 p a limitation.
+
+Fitting a neural network requires estimating the unknown parameters in
+
+(10.1). For a quantitative response, typically squared-error loss is used, so that the parameters are chosen to minimize n
+
+(y f(x ))2. (10.9) i i
+
+− i=1
+
+0
+
+Detailsabouthowtoperformthisminimizationareprovidedin Section 10.7.
+
+10.2 Multilayer Neural Networks
+
+Modern neural networks typically have more than one hidden layer, and often many units per layer. In theory a single hidden layer with a large number of units has the ability to approximate most functions. However, the learning task of discovering a good solution is made much easier with multiple layers each of modest size.
+
+We will illustrate a large dense network on the famous and publicly available MNIST handwritten digit dataset.1 Figure 10.3 shows examples of these digits. The idea is to build a model to classify the images into their correct digit class 0–9. Every image has p = 28 28 = 784 pixels, each
+
+× of which is an eight-bit grayscale value between 0 and 255 representing
+
+1See Le Cun,Cortes,and Burges(2010)“The MNISTdatabaseofhandwrittendigits”, availableathttp://yann.lecun.com/exdb/mnist.
+
+10.2 Multilayer Neural Networks 403
+
+FIGURE 10.3. Examples of handwritten digits from the MNIST corpus. Each grayscale image has 28 28 pixels, each of which is an eight-bit number (0–255)
+
+× whichrepresentshowdarkthatpixelis.Thefirst 3,5,and 8 areenlargedtoshow their 784 individual pixel values.
+
+the relative amount of the written digit in that tiny square.2 These pixels are stored in the input vector X (in, say, column order). The output is the class label, represented by a vector Y = (Y ,Y ,...,Y ) of 10 dummy
+
+0 1 9 variables, with a one in the position corresponding to the label, and zeros elsewhere. In the machine learning community, this is known as one-hot encoding. There are 60,000 training images, and 10,000 test images.
+
+one-hot
+
+On a historical note, digit recognition problems were the catalyst that encoding acceleratedthedevelopmentofneuralnetworktechnologyinthelate 1980 s at AT&TBell Laboratories and elsewhere.Pattern recognition tasks of this kind are relatively simple for humans. Our visual system occupies a large fraction of our brains, and good recognition is an evolutionary force for survival.These tasks are not so simple for machines,and it has taken more than 30 years to refine the neural-network architectures to match human performance.
+
+Figure 10.4 shows a multilayer network architecture that works well for solving the digit-classification task. It differs from Figure 10.1 in several ways:
+
+• It has two hidden layers L (256 units) and L (128 units) rather
+
+1 2 than one. Later we will see a network with seven hidden layers.
+
+• Ithastenoutputvariables,ratherthanone.Inthiscasethetenvari- ables really represent a single qualitative variable and so are quite dependent.(Wehaveindexedthembythedigitclass 0–9 ratherthan
+
+1–10, for clarity.) More generally, in multi-task learning one can pre- multi-task dict different responses simultaneously with a single network; they learning all have a say in the formation of the hidden layers.
+
+• The loss function used for training the network is tailored for the multiclass classification task.
+
+2In the analog-to-digital conversion process, only part of the written numeral may fallinthesquarerepresentingaparticularpixel.
+
+404 10. Deep Learning
+
+Input layer
+
+Hidden
+
+X1 layer L1
+
+Hidden layer L2
+
+X2 A(
+
+1
+
+1) O l u ay tp er ut
+
+A(2)
+
+1
+
+X3 A(
+
+2
+
+1) f 0(X) Y0
+
+A(2)
+
+2
+
+X4 A(
+
+3
+
+1) f 1(X) Y1
+
+A(2)
+
+3
+
+. .
+
+X5 A( 4 1) . . . .
+
+.
+
+.
+
+.
+
+.
+
+X6 . . f 9(X) Y9
+
+A(2)
+
+. . A(1)
+
+K2
+
+B
+
+. K1
+
+W2
+
+Xp W1
+
+FIGURE 10.4. Neural network diagram with two hidden layers and multiple outputs, suitable for the MNIST handwritten-digit problem. The input layer has p=784 units, the two hidden layers K 1 =256 and K 2 =128 units respectively, and the output layer 10 units. Along with intercepts (referred to as biases in the deep-learning community) this network has 235,146 parameters (referred to as weights).
+
+The first hidden layer is as in (10.2), with
+
+A(1) = h(1)(X) k k (10.10)
+
+= g(w(1)+ p w(1)X ) k 0 j=1 kj j
+
+) for k = 1,...,K . The second hidden layer treats the activations A(1) of
+
+1 k the first hidden layer as inputs and computes new activations
+
+A(2) = h(2)(X)
+
+$ $ (10.11)
+
+= g(w(2)+ K1 w(2)A(1))
+
+$0 k=1 $k k for % = 1,...,K . Notice that each of )the activations in the second layer
+
+2
+
+A(2) =h(2)(X)isafunctionoftheinputvector X.Thisisthecasebecause
+
+$ $ while they are explicitly a function of the activations A(1) from layer L , k 1 these in turn are functions of X. This would also be the case with more hidden layers. Thus, through a chain of transformations, the network is able to build up fairly complex transformations of X that ultimately feed into the output layer as features.
+
+We have introduced additional superscript notation such as h(2)(X) and
+
+$ w(2) in (10.10) and (10.11) to indicate to which layer the activations and
+
+$j weights (coefficients) belong, in this case layer 2. The notation W in Fig-
+
+1 weights
+
+10.2 Multilayer Neural Networks 405 ure 10.4 represents the entire matrix of weights that feed from the input layertothefirsthiddenlayer L .Thismatrixwillhave 785 256=200,960
+
+1
+
+× elements; there are 785 rather than 784 because we must account for the intercept or bias term.3 bias
+
+Each element A(1) feeds to the second hidden layer L via the matrix of k 2 weights W of dimension 257 128=32,896.
+
+2
+
+×
+
+Wenowgettotheoutputlayer,wherewenowhavetenresponsesrather than one. The first step is to compute ten different linear models similar to our single model (10.1),
+
+Z = β + K2 β h(2)(X) m m 0 $=1 m$ $
+
+(10.12)
+
+= β + )K2 β A(2), m 0 $=1 m$ $ for m = 0,1,...,9. The matrix B )stores all 129 10 = 1,290 of these
+
+× weights.
+
+If these were all separate quantitative responses, we would simply set each f (X) = Z and be done. However, we would like our estimates to m m represent class probabilities f (X) = Pr(Y = m X), just like in multi- m
+
+| nomial logistic regression in Section 4.3.5. So we use the special softmax softmax activation function (see (4.13) on page 145), e Zm f (X)=Pr(Y =m X)= , (10.13) m | 9 e Z"
+
+$=0 for m = 0,1,...,9. This ensures that the 10)numbers behave like proba- bilities (non-negative and sum to one). Even though the goal is to build a classifier, our model actually estimates a probability for each of the 10 classes. The classifier then assigns the image to the class with the highest probability.
+
+To train this network, since the response is qualitative, we look for coef- ficient estimates that minimize the negative multinomial log-likelihood n 9 y log(f (x )), (10.14) im m i
+
+− i=1 m=0
+
+0 0 also known as the cross-entropy. This is a generalization of the crite- cross- rion (4.5) for two-class logistic regression. Details on how to minimize this entropy objective are given in Section 10.7. If the response were quantitative, we would instead minimize squared-error loss as in (10.9).
+
+Table 10.1 compares the test performance of the neural network with two simple models presented in Chapter 4 that make use of linear decision boundaries:multinomial logistic regression and linear discriminant analysis.
+
+The improvement of neural networks over both of these linear methods is dramatic:thenetworkwithdropoutregularizationachievesatesterrorrate below 2%onthe 10,000 testimages.(We described ropout regularization in Section 10.7.3.) In Section 10.9.2 of the lab, we present the code for fitting this model, which runs in just over two minutes on a laptop computer.
+
+The use of “weights” for coefficients and “bias” for the intercepts wk 0 in (10.2) is popularinthemachinelearningcommunity;thisuseofbiasisnottobeconfusedwith the“bias-variance”usageelsewhereinthisbook.
+
+406 10. Deep Learning
+
+Method Test Error
+
+Neural Network + Ridge Regularization 2.3%
+
+Neural Network + Dropout Regularization 1.8%
+
+Multinomial Logistic Regression 7.2%
+
+Linear Discriminant Analysis 12.7%
+
+TABLE 10.1. Test error rate on the MNIST data, for neural networks with two forms of regularization, as well as multinomial logistic regression and linear dis- criminant analysis. In this example, the extra complexity of the neural network leads to a marked improvement in test error.
+
+FIGURE 10.5.Asampleofimagesfromthe CIFAR100 database:acollectionof natural images from everyday life, with 100 different classes represented.
+
+Adding the number of coefficients in W , W and B, we get 235,146 in
+
+1 2 all,morethan 33 timesthenumber 785 9=7,065 neededformultinomial
+
+× logistic regression. Recall that there are 60,000 images in the training set.
+
+While this might seem like a large training set, there are almost four times asmanycoefficientsintheneuralnetworkmodelasthereareobservationsin thetrainingset!Toavoidoverfitting,someregularizationisneeded.Inthis example, we used two forms of regularization: ridge regularization, which is similar to ridge regression from Chapter 6, and dropout regularization.
+
+dropout
+
+We discuss both forms of regularization in Section 10.7.
+
+10.3 Convolutional Neural Networks
+
+Neuralnetworksreboundedaround 2010 with big successes in imageclassification.Around that time,massive databases of labeled images were being accumulated, with ever-increasing numbers of classes. Figure 10.5 shows
+
+75 images drawn from the CIFAR100 database.4 This database consists of
+
+60,000 imageslabeledaccordingto 20 superclasses(e.g.aquaticmammals), with five classes per superclass (beaver, dolphin, otter, seal, whale). Each image has a resolution of 32 32 pixels, with three eight-bit numbers per
+
+× pixel representing red, green and blue. The numbers for each image are organized in a three-dimensional array called a feature map. The first two featuremap
+
+4See Chapter 3 of Krizhevsky (2009) “Learning multiple layers of fea- tures from tiny images”, available at https://www.cs.toronto.edu/~kriz/ learning-features-2009-TR.pdf.
+
+10.3 Convolutional Neural Networks 407
+
+FIGURE10.6.Schematicshowinghowaconvolutionalneuralnetworkclassifies an image of a tiger. The network takes in the image and identifies local features.
+
+Itthencombinesthelocalfeaturesinordertocreatecompoundfeatures,whichin this example include eyes and ears. These compound features are used to output the label “tiger”.
+
+axes are spatial (both are 32-dimensional), and the third is the channel channel axis,5 representing the three colors. There is a designated training set of
+
+50,000 images, and a test set of 10,000.
+
+Aspecialfamilyofconvolutionalneuralnetworks(CNNs)hasevolvedfor convolutional classifying images such as these, and has shown spectacular success on a neural wide range of problems. CNNs mimic to some degree how humans classify networks images, by recognizing specific features or patterns anywhere in the image that distinguish each particular object class. In this section we give a brief overview of how they work.
+
+Figure 10.6 illustratestheideabehindaconvolutionalneuralnetworkon a cartoon image of a tiger.6
+
+The network first identifies low-level features in the input image, such as small edges, patches of color, and the like. These low-level features are then combined to form higher-level features, such as parts of ears, eyes, andsoon.Eventually,thepresenceorabsenceofthesehigher-levelfeatures contributes to the probability of any given output class.
+
+How does a convolutional neural network build up this hierarchy?Itcombines two specialized types of hidden layers, called convolution layers and pooling layers. Convolution layers search for instances of small patterns in the image, whereas pooling layers downsample these to select a prominent subset. In order to achieve state-of-the-art results, contemporary neural- network architectures make use of many convolution and pooling layers.
+
+We describe convolution and pooling layers next.
+
+10.3.1 Convolution Layers
+
+Aconvolutionlayerismadeupofalargenumberofconvolutionfilters,each convolution layer
+
+5The term channel is taken from the signal-processing literature. Each channel is a convolution distinctsourceofinformation. filter
+
+6 Thanks to Elena Tuzhilina for producing the diagram and https://www.
+
+cartooning 4 kids.com/forpermissiontousethecartoontiger.
+
+408 10. Deep Learning ofwhichisatemplatethatdetermineswhetheraparticularlocalfeatureis present in an image. A convolution filter relies on a very simple operation, called a convolution, which basically amounts to repeatedly multiplying matrix elements and then adding the results.
+
+To understand how a convolution filter works, consider a very simple example of a 4 3 image:
+
+× a b c d e f
+
+Original Image= .
+
+g h i
+
+j k l
+
+ 
+
+ 
+
+Now consider a 2 2 filter of the form
+
+×
+
+α β
+
+Convolution Filter= .
+
+γ δ
+
+3 4
+
+When we convolve the image with the filter, we get the result 7 aα+bβ+dγ+eδ bα+cβ+eγ+fδ
+
+Convolved Image= dα+eβ+gγ+hδ eα+fβ+hγ+iδ .
+
+  gα+hβ+jγ+kδ hα+iβ+kγ+lδ
+
+ 
+
+For instance, the top-left element comes from multiplying each element in the 2 2 filter by the corresponding element in the top left 2 2 portion
+
+× × of the image, and adding the results. The other elements are obtained in a similarway:theconvolutionfilterisappliedtoevery 2 2 submatrixofthe
+
+× originalimagein ordertoobtain theconvolvedimage.Ifa 2 2 submatrix
+
+× of the original image resembles the convolution filter, then it will have a large value in the convolved image; otherwise, it will have a small value.
+
+Thus, the convolved image highlights regions of the original image that resemble the convolution filter. We have used 2 2 as an example; in
+
+× general convolution filters are small % % arrays, with % and % small
+
+1 2 1 2
+
+× positive integers that are not necessarily equal.
+
+Figure 10.7 illustratestheapplicationoftwoconvolutionfilterstoa 192
+
+×
+
+179 image of a tiger, shown on the left-hand side.8 Each convolution filter is a 15 15 image containing mostly zeros (black), with a narrow strip
+
+× of ones (white) oriented either vertically or horizontally within the image.
+
+Wheneachfilterisconvolvedwiththeimageofthetiger,areasofthetiger thatresemblethefilter(i.e.thathaveeitherhorizontalorverticalstripesor edges)aregivenlargevalues,andareasofthetigerthatdonotresemblethe feature are given small values. The convolved images are displayed on the right-handside.Weseethatthehorizontalstripefilterpicksouthorizontal stripes and edges in the original image, whereas the vertical stripe filter picks out vertical stripes and edges in the original image.
+
+7The convolved image is smaller than the original image because its dimension is givenbythenumberof 2 2 submatricesintheoriginalimage.Notethat 2 2 isthe
+
+× × dimension of the convolution filter. If we want the convolved image to have the same dimensionastheoriginalimage,thenpaddingcanbeapplied.
+
+8The tiger image used in Figures 10.7–10.9 was obtained from the public domain imageresourcehttps://www.needpix.com/.
+
+10.3 Convolutional Neural Networks 409
+
+FIGURE 10.7.Convolutionfiltersfindlocalfeaturesinanimage,suchasedges and small shapes. We begin with the image of the tiger shown on the left, and apply the two small convolution filters in the middle. The convolved images high- light areas in the original image where details similar to the filters are found.
+
+Specifically,thetopconvolvedimagehighlightsthetiger’sverticalstripes,whereas the bottom convolved image highlights the tiger’s horizontal stripes. We can think of the original image as the input layer in a convolutional neural network, and the convolved images as the units in the first hidden layer.
+
+We have used a large image and two large filters in Figure 10.7 for illus- tration.Forthe CIFAR100 databasethereare 32 32 colorpixelsperimage,
+
+× and we use 3 3 convolution filters.
+
+×
+
+Inaconvolutionlayer,we use a whole bank of filters to pick out a variety of differently-oriented edges and shapes in the image. Using predefined filters in this way is standard practice in image processing. By contrast, with CNNs the filters are learned forthespecificclassificationtask.Wecan think of the filter weights as the parameters going from an input layer to a hidden layer, with one hidden unit for each pixel in the convolved image.
+
+This is in fact the case, though the parameters are highly structured and constrained (see Exercise 4 for more details). They operate on localized patches in the input image (so there are many structural zeros), and the sameweightsinagivenfilterarereusedforallpossiblepatchesintheimage
+
+(so the weights are constrained).9
+
+We now give some additional details.
+
+• Since the input image is in color, it has three channels represented by a three-dimensional feature map (array). Each channel is a two- dimensional (32 32) feature map — one for red, one for green, and
+
+× one for blue. A single convolution filter will also have three channels, onepercolor,eachofdimension 3 3,withpotentiallydifferentfilter
+
+× weights. The results of the three convolutions are summed to form a two-dimensional output feature map. Note that at this point the color information has been used, and is not passed on to subsequent layers except through its role in the convolution.
+
+9Thisusedtobecalledweight sharingintheearlyyearsofneuralnetworks.
+
+410 10. Deep Learning
+
+• If we use K different convolution filters at this first hidden layer, we get K two-dimensional output feature maps, which together are treated as a single three-dimensional feature map. We view each of the K output feature maps as a separate channel of information, so now we have K channels in contrast to the three color channels of theoriginalinputfeaturemap.Thethree-dimensionalfeaturemapis just like the activations in a hidden layer of a simple neural network, except organized and produced in a spatially structured way.
+
+• We typically apply the Re LU activation function (10.5) to the con- volved image. This step is sometimes viewed as a separate layer in the convolutional neural network, in which case it is referred to as a detector layer.
+
+detector layer
+
+10.3.2 Pooling Layers
+
+A pooling layer provides a way to condense a large image into a smaller pooling summary image. While there are a number of possible ways to perform pooling, the max pooling operation summarizes each non-overlapping 2 2
+
+× block of pixels in an image using the maximum value in the block. This reduces the size of the image by a factor of two in each direction, and it also provides some location invariance: i.e. as long as there is a large value in one of the four pixels in the block, the whole block registers as a large value in the reduced image.
+
+Here is a simple example of max pooling:
+
+1 2 5 3
+
+3 0 1 2 3 5
+
+Max pool   .
+
+2 1 3 4 → 2 4
+
+3 4
+
+1 1 2 0
+
+ 
+
+ 
+
+10.3.3 Architecture of a Convolutional Neural Network
+
+So far we have defined a single convolution layer — each filter produces a new two-dimensional feature map. The number of convolution filters in a convolutionlayerisakintothenumberofunitsataparticularhiddenlayer in a fully-connected neural network of the type we saw in Section 10.2.
+
+This number also defines the number of channels in the resulting three- dimensional feature map. We have also described a pooling layer, which reduces the first two dimensions of each three-dimensional feature map.
+
+Deep CNNshavemanysuchlayers.Figure 10.8 showsatypicalarchitecture for a CNN for the CIFAR100 image classification task.
+
+At the input layer, we see the three-dimensional feature map of a color image, where the channel axis represents each color by a 32 32 two-
+
+× dimensional feature map of pixels. Each convolution filter produces a new channel at the first hidden layer, each of which is a 32 32 feature map
+
+×
+
+(aftersomepaddingattheedges).Afterthisfirstroundofconvolutions,we now have a new “image”; a feature map with considerably more channels than the three color input channels (six in the figure, since we used six convolution filters).
+
+10.3 Convolutional Neural Networks 411
+
+8
+
+16
+
+32 8 4
+
+32
+
+16
+
+32
+
+2
+
+500
+
+100 pool pool convolve pool convolve flatten convolve
+
+FIGURE10.8.Architectureofadeep CNNforthe CIFAR100 classificationtask.
+
+Convolution layers are interspersed with 2 2 max-pool layers, which reduce the
+
+× size by a factor of 2 in both dimensions.
+
+Thisisfollowedbyamax-poollayer,whichreducesthesizeofthefeature map in each channel by a factor of four: two in each dimension.
+
+Thisconvolve-then-poolsequenceisnowrepeatedforthenexttwolayers.
+
+Some details are as follows:
+
+• Eachsubsequentconvolvelayerissimilartothefirst.Ittakesasinput thethree-dimensionalfeaturemapfromthepreviouslayerandtreats it like a single multi-channel image. Each convolution filter learned has as many channels as this feature map.
+
+• Since the channel feature maps are reduced in size after each pool layer, we usually increase the number of filters in the next convolve layer to compensate.
+
+• Sometimes we repeat several convolve layers before a poollayer.This effectively increases the dimension of the filter.
+
+These operations are repeated until thepoolinghasreducedeachchannel feature map down to just a few pixels in each dimension. At this point the three-dimensional feature maps are flattened — the pixels are treated as separate units — and fed into one or more fully-connected layers before reaching the output layer, which is a softmax activation for the 100 classes
+
+(as in (10.13)).
+
+There are many tuning parameters to be selected in constructing such a network, apart from the number, nature, and sizes of each layer. Dropout learning can be used at each layer, as well as lasso or ridge regularization
+
+(see Section 10.7). The details of constructing a convolutional neural net- work can seem daunting. Fortunately, terrific software is available, with extensiveexamplesandvignettesthatprovideguidanceonsensiblechoices for the parameters. For the CIFAR100 official test set, the best accuracy as of this writing is just above 75%, but undoubtedly this performance will continue to improve.
+
+10.3.4 Data Augmentation
+
+An additional important trick used with image modeling is data augment- dataaug- ation. Essentially, each training image is replicated many times, with each mentation replicaterandomlydistortedinanaturalwaysuchthathumanrecognition is unaffected. Figure 10.9 shows some examples. Typical distortions are
+
+412 10. Deep Learning
+
+FIGURE 10.9. Data augmentation. The original image (leftmost) is distorted in natural ways to produce different images with the same class label. These distortions do not fool humans, and act as a form of regularization when fitting the CNN.
+
+zoom, horizontal and vertical shift, shear, small rotations, and in this case horizontal flips. At face value this is a way of increasing the training set considerably with somewhat different examples, and thus protects against overfitting. In fact we can see this as a form of regularization: we build a cloud of images around each original image, all with the same label. This kind of fattening of the data is similar in spirit to ridge regularization.
+
+We will see in Section 10.7.2 that the stochastic gradient descent al- gorithms for fitting deep learning models repeatedly process randomly- selectedbatchesof,say,128 trainingimagesatatime.Thisworkshand-in- glove with augmentation, because we can distort each image in the batch on the fly, and hence do not have to store all the new images.
+
+10.3.5 Results Using a Pretrained Classifier
+
+Here we use an industry-level pretrained classifier to predict the class of somenewimages.Theresnet 50 classifierisaconvolutionalneuralnetwork that was trained using the imagenet data set, which consists of millions of imagesthatbelongtoanever-growingnumberofcategories.10 Figure 10.10 demonstratestheperformanceofresnet 50 onsixphotographs(privatecol- lectionofoneoftheauthors).11 The CNN does a reasonable job classifying the hawk in the second image. If we zoom out as in the third image, it gets confused and chooses the fountain rather than the hawk. In the final imagea“jacamar”is a tropical bird from Southand Central Americawith similar coloring to the South African Cape Weaver. We give more details on this example in Section 10.9.4.
+
+Much of the work in fitting a CNN is in learning the convolution filters at the hidden layers; these are the coefficients of a CNN. For models fit to massive corpora such as imagenet with many classes, the output of these filters can serve as features for general natural-image classification prob- lems. One can use these pretrained hidden layers for new problems with much smaller training sets (a process referred to as weight freezing), and weight justtrainthelastfewlayersofthenetwork,whichrequiresmuchlessdata.
+
+freezing
+
+10Formoreinformationaboutresnet 50,see He,Zhang,Ren,and Sun(2015)“Deep residual learning for image recognition”, https://arxiv.org/abs/1512.03385. For de- tails about imagenet, see Russakovsky, Deng, et al. (2015) “Image Net Large Scale
+
+Visual Recognition Challenge”,in International Journal of Computer Vision.
+
+11These resnet results can change with time, since the publicly-trained model gets updatedperiodically.
+
+10.4 Document Classification 413 flamingo Cooper’s hawk Cooper’s hawk flamingo 0.83 kite 0.60 fountain 0.35 spoonbill 0.17 great grey owl 0.09 nail 0.12 white stork 0.00 robin 0.06 hook 0.07
+
+Lhasa Apso cat Cape weaver
+
+Tibetan terrier 0.56 Old English sheepdog 0.82 jacamar 0.28
+
+Lhasa 0.32 Shih-Tzu 0.04 macaw 0.12 cocker spaniel 0.03 Persian cat 0.04 robin 0.12
+
+FIGURE 10.10. Classification of six photographs using the resnet 50 CNN trained on the imagenet corpus. The table below the images displays the true
+
+(intended)label at the top of each panel,and the top three choices of the classifier
+
+(outof 100).Thenumbersaretheestimatedprobabilitiesforeachchoice.(Akite is a raptor, but not a hawk.)
+
+The vignettes and book 12 that accompany the keras package give more details on such applications.
+
+10.4 Document Classification
+
+In this section we introduce a new type of example that has important applications in industry and science: predicting attributes of documents.
+
+Examples of documents include articles in medical journals, Reuters news feeds, emails, tweets, and so on. Our example will be IMDb (Internet Movie
+
+Database)ratings—shortdocumentswhereviewershavewrittencritiques ofmovies.13 The response in this case is the sentiment of the review, which will be positive or negative.
+
+12Deep Learning with Rby F.Cholletand J.J.Allaire,2018,Manning Publications.
+
+13For details, see Maas et al. (2011) “Learning word vectors for sentiment analysis”, in Proceedings of the 49 th Annual Meeting of the Association for Computational Lin- guistics: Human Language Technologies,pages 142–150.
+
+414 10. Deep Learning
+
+Here is the beginning of a rather amusing negative review:
+
+This has to be one of the worst films of the 1990 s. When my friends & I were watching this film (being the target audience it was aimed at) we just sat & watched the first half an hour with our jaws touching the floor at how bad it really was. The rest of the time, everyone else in the theater just started talking to each other, leaving or generally crying into their popcorn ...
+
+Each review can be a different length, include slang or non-words, have spelling errors, etc. We need to find a way to featurize such a document.
+
+featurize
+
+This is modern parlance for defining a set of predictors.
+
+The simplest and most common featurization is the bag-of-words model.
+
+bag-of-words
+
+Wescoreeachdocumentforthepresenceorabsenceofeachofthewordsin alanguagedictionary—inthiscasean Englishdictionary.Ifthedictionary contains M words,thatmeansforeachdocumentwecreateabinaryfeature vector of length M, and score a 1 for every word present, and 0 otherwise.
+
+That can be a very wide feature vector, so we limit the dictionary — in this case to the 10,000 most frequently occurring words in the training corpus of 25,000 reviews. Fortunately there are nice tools for doing this automatically. Here is the beginning of a positive review that has been redacted in this way:
+
+START this film was just brilliant casting location scenery
+
+4 5 story direction everyone’s really suited the part they played and you could just imagine being there robert UNK is an amazing
+
+4 5 actorandnowthesamebeingdirector UNK fathercamefrom
+
+4 5 the same scottish island as myself so i loved ...
+
+Herewecanseemanywordshavebeenomitted,andsomeunknownwords
+
+(UNK) have been marked as such. With this reduction the binary feature vectorhaslength 10,000,andconsistsmostlyof 0’sandasmatteringof 1’s in the positions corresponding to words that are present in the document.
+
+We have a training set and test set, each with 25,000 examples, and each balancedwithregardtosentiment.Theresultingtrainingfeaturematrix X hasdimension 25,000 10,000,butonly 1.3%ofthebinaryentriesarenon-
+
+× zero.Wecallsuchamatrixsparse,becausemostofthevaluesarethesame
+
+(zero in this case); it can be stored efficiently in sparse matrix format.14 sparse
+
+There are a variety of ways to account for the document length; here we matrix only score a word as in or out of the document, but for example one could format instead record the relative frequency of words. We split off a validation set of size 2,000 from the 25,000 training observations (for model tuning), and fit two model sequences:
+
+• A lasso logistic regression using the glmnet package;
+
+• A two-class neural network with two hidden layers, each with 16
+
+Re LU units.
+
+14Ratherthanstorethewholematrix,wecanstoreinsteadthelocationandvaluesfor the nonzero entries. In this case, since the nonzero entries are all 1, just the locations arestored.
+
+10.4 Document Classification 415
+
+●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●
+
+●
+
+●●●
+
+●●●
+
+●●●●●●
+
+4 6 8 10 12
+
+●
+
+FIGURE 10.11. Accuracy of the lasso and a two-hidden-layer neural network on the IMDb data. For the lasso, the x-axis displays log(λ), while for the neural
+
+− network it displays epochs (number of times the fitting algorithm passes through the training set). Both show a tendency to overfit, and achieve approximately the same test accuracy.
+
+Both methods produce a sequence of solutions. The lasso sequence is in- dexed by the regularization parameter λ. The neural-net sequence is in- dexed by the number of gradient-descent iterations used in the fitting, as measured by training epochs or passes through the training set (Sec- tion 10.7).Noticethatthetrainingaccuracyin Figure 10.11(blackpoints) increases monotonically in both cases. We can use the validation error to pick a good solution from each sequence (blue points in the plots), which would then be used to make predictions on the test data set.
+
+Note that a two-class neural network amounts to a nonlinear logistic regression model. From (10.12) and (10.13) we can see that
+
+Pr(Y =1X) log | = Z Z (10.15)
+
+1 0
+
+Pr(Y =0X) −
+
+* | +
+
+K2
+
+= (β β )+ (β β )A(2).
+
+10 − 00 1$ − 0$ $
+
+$=1
+
+0
+
+(This shows the redundancy in the softmax function; for K classes we reallyonlyneedtoestimate K 1 setsofcoefficients.See Section 4.3.5.)In
+
+−
+
+Figure 10.11 we show accuracy (fraction correct) rather than classification accuracy error (fraction incorrect), the former being more popular in the machine learningcommunity.Bothmodelsachieveatest-setaccuracyofabout 88%.
+
+The bag-of-words model summarizes a document by the words present, and ignores their context. There are at least two popular ways to take the context into account:
+
+• The bag-of-n-grams model. For example, a bag of 2-grams records bag-of-n- grams
+
+0.1
+
+9.0
+
+8.0
+
+7.0
+
+6.0
+
+Lasso
+
+−log(λ) ycarucc A
+
+● ● ● ● ● ● ● ● ● ● ● ● ● ● ● ● ●
+
+●
+
+●
+
+●●
+
+●●
+
+●●
+
+●●
+
+●●●●●●●●●●●●●●●●●●●
+
+●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●● ● ● ● ●●●●●●●●● ● ●●● ● ● ● ● ● ● ● ● ● ● ● ● ● ● ● ● ● ● ● ● ● ● ● ● ● ● ● ● ● ● ● ● ● ● ● ● ● ● ● ●● ● ● ● ● ● ● ● ● ●●●
+
+●
+
+●●●●●●
+
+● train
+
+●●●●●● ● validation
+
+●●●●●●●●●●●● ● test
+
+5 10 15 20
+
+●●
+
+0.1
+
+9.0
+
+8.0
+
+7.0
+
+6.0
+
+Neural Net
+
+Epochs ycarucc A ●● ●● ●● ● ● ● ● ● ● ● ● ● ● ● ● ● ● ● ● ● ● ● ● ● ● ● ● ● ● ● ● ●● ● ● ● ●
+
+416 10. Deep Learning the consecutive co-occurrence of every distinct pair of words. “Bliss- fully long” can be seen as a positive phrase in a movie review, while
+
+“blissfully short” a negative.
+
+• Treat the document as a sequence, taking account of all the words in the context of those that preceded and those that follow.
+
+In the next section we explore models for sequences of data, which have applications in weather forecasting, speech recognition, language transla- tion,andtime-seriesprediction,tonameafew.Wecontinuewiththis IMDb example there.
+
+10.5 Recurrent Neural Networks
+
+Many data sources are sequential in nature, and call for special treatment when building predictive models. Examples include:
+
+• Documents such as book and movie reviews, newspaper articles, and tweets. The sequence and relative positions of words in a document capture the narrative, theme and tone, and can be exploited in tasks suchastopicclassification,sentimentanalysis,andlanguagetransla- tion.
+
+• Time series of temperature, rainfall, wind speed, air quality, and so on. We may want to forecast the weather several days ahead, or cli- mate several decades ahead.
+
+• Financialtimeseries,wherewetrackmarketindices,tradingvolumes, stock and bond prices, and exchange rates. Here prediction is often difficult, but as we will see, certain indices can be predicted with reasonable accuracy.
+
+• Recordedspeech,musicalrecordings,andothersoundrecordings.We may want to give a text transcription of a speech, or perhaps a lan- guage translation. We may want to assess the quality of a piece of music, or assign certain attributes.
+
+• Handwriting, such as doctor’s notes, and handwritten digits such as zip codes. Here we want to turn the handwriting into digital text, or read the digits (optical character recognition).
+
+In a recurrent neural network (RNN), the input object X is a sequence.
+
+recurrent
+
+Consider a corpus of documents, such as the collection of IMDb movie re- neural views. Each document can be represented as a sequence of L words, so network
+
+X = X ,X ,...,X , where each X represents a word. The order of
+
+1 2 L $
+
+{ } the words, and closeness of certain words in a sentence, convey semantic meaning. RNNs are designed to accommodate and take advantage of the sequentialnatureofsuchinputobjects,muchlikeconvolutionalneuralnet- works accommodate the spatial structure of image inputs. The output Y can also be a sequence (such as in language translation), but often is a scalar, like the binary sentiment label of a movie review document.
+
+10.5 Recurrent Neural Networks 417
+
+Y Y
+
+O O O O O O
+
+! 1 2 3 L-1 L
+
+B B B B B B
+
+U = U U U U
+
+A A A A A A
+
+! 1 2 3 L-1 L
+
+W W W W W W
+
+...
+
+X X X X X X
+
+! 1 2 3 L-1 L
+
+FIGURE10.12.Schematicofasimplerecurrentneuralnetwork.Theinputisa sequence of vectors { X " } L 1 , and here the target is a single response. The network processes the input sequence X sequentially; each X " feeds into the hidden layer, which also has as input the activation vector A " 1 from the previous element in
+
+− thesequence,andproducesthecurrentactivationvector A ".Thesamecollections ofweights W,Uand Bareusedaseachelementofthesequenceisprocessed.The output layer produces a sequence of predictions O " from the current activation
+
+A ",buttypicallyonlythelastofthese,O L,isofrelevance.Totheleftoftheequal sign is a concise representation of the network, which is unrolled into a more explicit version on the right.
+
+Figure 10.12 illustratesthestructureofaverybasic RNNwithasequence
+
+X = X ,X ,...,X as input, a simple output Y, and a hidden-layer
+
+1 2 L
+
+{ } sequence A L = A ,A ,...,A . Each X is a vector; in the document
+
+{ $ }1 { 1 2 L } $ example X could represent a one-hot encoding for the %th word based on
+
+$ the language dictionary for the corpus (see the top panel in Figure 10.13 for a simple example). As the sequence is processed one vector X at a
+
+$ time, the network updates the activations A in the hidden layer, taking
+
+$ as input the vector X and the activation vector A from the previous
+
+$ $ 1
+
+− step in the sequence. Each A feeds into the output layer and produces a
+
+$ prediction O for Y. O , the last of these, is the most relevant.
+
+$ L
+
+Indetail,supposeeachvector X oftheinputsequencehaspcomponents
+
+$
+
+XT = (X ,X ,...,X ), and the hidden layer consists of K units AT =
+
+$ $1 $2 $p $
+
+(A ,A ,...,A ). As in Figure 10.4, we represent the collection of K
+
+$1 $2 $K
+
+×
+
+(p+1)sharedweightsw fortheinputlayerbyamatrix W,andsimilarly kj
+
+U is a K K matrix of the weights u for the hidden-to-hidden layers, ks
+
+× and B is a K+1 vector of weights β for the output layer. Then k p K
+
+A =g w + w X + u A , (10.16)
+
+$k k 0 kj $j ks $ 1,s
+
+−
+
+1 0 j=1 0 s=1 2 and the output O is computed as
+
+$
+
+K
+
+O =β + β A (10.17)
+
+$ 0 k $k k=1
+
+0 for a quantitative response, or with an additional sigmoid activation func- tion for a binary response, for example. Here g() is an activation function
+
+· such as Re LU. Notice that the same weights W, U and B are used as we
+
+418 10. Deep Learning process each element in the sequence, i.e. they are not functions of %. This is a form of weight sharing used by RNNs, and similar to the use of filters weight in convolutional neural networks (Section 10.3.1.) As we proceed from be- sharing ginning to end, the activations A accumulate a history of what has been
+
+$ seen before, so that the learned context can be used for prediction.
+
+For regression problems the loss function for an observation (X,Y) is
+
+(Y O )2, (10.18)
+
+L
+
+− whichonlyreferencesthefinaloutput O =β + K β A .Thus O ,O ,
+
+L 0 k=1 k Lk 1 2
+
+...,O arenotused.Whenwefitthemodel,eachelement X oftheinput
+
+L 1 $
+
+− ) sequence X contributesto O viathechain(10.16),andhencecontributes
+
+L indirectly to learning the shared parameters W, U and B via the loss
+
+(10.18). With n input sequence/response pairs (x ,y ), the parameters are i i found by minimizing the sum of squares n n K p K
+
+2
+
+(y o )2 = y β + β g w + w x + u a .
+
+i i L i 0 k k 0 kj i Lj ks i,L 1,s
+
+− − −
+
+0 i=1 0 i=11 ’ k 0 =1 ’ 0 j=1 0 s=1 ((2
+
+(10.19)
+
+Here we use lowercase letters for the observed y and vector sequences i x = x ,x ,...,x ,15 as well as the derived activations.
+
+i i 1 i 2 i L
+
+{ }
+
+Since the intermediate outputs O are not used, one may well ask why
+
+$ theyarethereatall.Firstofall,theycomeforfree,sincetheyusethesame outputweights Bneededtoproduce O ,andprovideanevolvingprediction
+
+L for the output. Furthermore, for some learning tasks the response is also a sequence,andsotheoutputsequence O ,O ,...,O isexplicitlyneeded.
+
+1 2 L
+
+{ }
+
+Whenusedatfullstrength,recurrentneuralnetworkscanbequitecom- plex. We illustrate their use in two simple applications. In the first, we continue with the IMDb sentiment analysis of the previous section, where weprocessthewordsinthereviewssequentially.Inthesecondapplication, we illustrate their use in a financial time series forecasting problem.
+
+10.5.1 Sequential Models for Document Classification
+
+Here we return to our classification task with the IMDb reviews. Our ap- proach in Section 10.4 was to use the bag-of-words model. Here the plan is to use instead the sequence of words occurring in a document to make predictions about the label for the entire document.
+
+Wehave,however,adimensionalityproblem:eachwordinourdocument is represented by a one-hot-encoded vector (dummy variable) with 10,000 elements (one per word in the dictionary)! An approach that has become popular is to represent each word in a much lower-dimensional embedding embedding space. This means that rather than representing each word by a binary vectorwith 9,999 zerosandasingleoneinsomeposition,wewillrepresent itinsteadbyasetofmrealnumbers,noneofwhicharetypicallyzero.Here m is the embedding dimension, and can be in the low 100 s, or even less.
+
+Thismeans(inourcase)thatweneedamatrix Eofdimensionm 10,000,
+
+×
+
+15Thisisasequenceofvectors;eachelementxi" isap-vector.
+
+10.5 Recurrent Neural Networks 419 toh−en O debm E siht si eno fo eht tseb smlif yllautca eht tseb I evah reve nees eht mlif strats eno llaf yad
+
+FIGURE 10.13.Depiction of a sequence of 20 words representing a single doc- ument: one-hot encoded using a dictionary of 16 words (top panel) and embedded in an m-dimensional space with m=5 (bottom panel).
+
+whereeachcolumnisindexedbyoneofthe 10,000 wordsinourdictionary, and the values in that column give the m coordinates for that word in the embedding space.
+
+Figure 10.13 illustrates the idea (with a dictionary of 16 rather than
+
+10,000, and m = 5). Where does E come from? If we have a large corpus of labeled documents, we can have the neural network learn E as part of the optimization. In this case E is referred to as an embedding layer, embedding and a specialized E is learned for the task at hand. Otherwise we can layer insert a precomputed matrix E in the embedding layer, a process known as weight freezing. Two pretrained embeddings, word 2 vec and Glo Ve, are weight widely used.16 These are built from a very large corpus of documents by freezing a variant of principal components analysis (Section 12.2). The idea is that word 2 vec the positions of words in the embedding space preserve semantic meaning;
+
+Glo Ve e.g. synonyms should appear near each other.
+
+So far, so good. Each document is now represented as a sequence of m- vectors that represents the sequence of words. The next step is to limit each document to the last L words. Documents that are shorter than L get padded with zeros upfront. So now each document is represented by a series consisting of L vectors X = X ,X ,...,X , and each X in the
+
+1 2 L $
+
+{ } sequence has m components.
+
+We now use the RNN structure in Figure 10.12. The training corpus consists of n separate series (documents) of length L, each of which gets processed sequentially from left to right. In the process, a parallel series of hidden activation vectors A , %=1,...,L is created as in (10.16) for each
+
+$ document.A feedsintotheoutputlayertoproducetheevolvingprediction
+
+$
+
+O .Weusethefinalvalue O topredicttheresponse:thesentimentofthe
+
+$ L review.
+
+16 word 2 vec is described in Mikolov, Chen, Corrado, and Dean (2013), available at https://code.google.com/archive/p/word 2 vec. Glo Ve is described in Pennington,
+
+Socher,and Manning(2014),availableathttps://nlp.stanford.edu/projects/glove.
+
+420 10. Deep Learning
+
+This is a simple RNN, and has relatively few parameters. If there are K hidden units, the common weight matrix W has K (m+1) parameters,
+
+× thematrix Uhas K K parameters,and Bhas 2(K+1)forthetwo-class
+
+× logistic regression as in (10.15). These are used repeatedly as we process the sequence X = X L from left to right, much like we use a single
+
+{ $ }1 convolution filter to process each patch in an image (Section 10.3.1). If the embedding layer E is learned, that adds an additional m D parameters
+
+×
+
+(D =10,000 here), and is by far the biggest cost.
+
+Wefitthe RNNasdescribedin Figure 10.12 andtheaccompayingtextto the IMDbdata.Themodelhadanembeddingmatrix Ewithm=32(which was learned in training as opposed to precomputed), followed by a single recurrent layer with K = 32 hidden units. The model was trained with dropout regularization on the 25,000 reviews in the designated training set, and achieved a disappointing 76% accuracy on the IMDb test data. A networkusingthe Glo Vepretrainedembeddingmatrix Eperformedslightly worse.
+
+Foreaseof expositionwehavepresenteda verysimple RNN.More elab- orate versions use long term and short term memory (LSTM). Two tracks of hidden-layer activations are maintained, so that when the activation A
+
+$ is computed, it gets input from hidden units both further back in time, and closer in time — a so-called LSTM RNN. With long sequences, this
+
+LSTMRNN overcomes the problem of early signals being washed out by the time they get propagated through the chain to the final activation vector A .
+
+L
+
+When we refit our model using the LSTM architecture for the hidden layer,theperformanceimprovedto 87%onthe IMDbtestdata.Thisiscom- parable with the 88% achieved by the bag-of-words model in Section 10.4.
+
+We give details on fitting these models in Section 10.9.6.
+
+Despite this added LSTM complexity, our RNN is still somewhat “entry level”. We could probably achieve slightly better results by changing the size of the model, changing the regularization, and including additional hidden layers. However, LSTM models take a long time to train, which makes exploring many architectures and parameter optimization tedious.
+
+RNNs provide a rich framework for modeling data sequences, and they continue to evolve. There have been many advances in the development of RNNs — in architecture, data augmentation, and in the learning algo- rithms.Atthetimeofthiswriting(early 2020)theleading RNNconfigura- tions report accuracy above 95% on the IMDb data. The details are beyond the scope of this book.17
+
+10.5.2 Time Series Forecasting
+
+Figure 10.14 shows historical trading statistics from the New York Stock
+
+Exchange.Shownarethreedailytimeseriescoveringtheperiod December
+
+3, 1962 to December 31, 1986:18
+
+17An IMDb leaderboard can be found at https://paperswithcode.com/sota/ sentiment-analysis-on-imdb.
+
+18Thesedatawereassembledby Le Baronand Weigend(1998)IEEETransactionson
+
+Neural Networks,9(1):213–220.
+
+10.5 Recurrent Neural Networks 421
+
+)emulo V gnidar T(go L nrute R seno J wo D
+
+0.1
+
+5.0
+
+0.0
+
+0.1−
+
+40.0
+
+00.0
+
+40.0−
+
+1965 1970 1975 1980 1985
+
+)ytilitalo V(go L
+
+8−
+
+9−
+
+11−
+
+31−
+
+FIGURE10.14.Historicaltradingstatisticsfromthe New York Stock Exchange.
+
+Dailyvaluesofthenormalizedlogtradingvolume,DJIAreturn,andlogvolatility areshownfora 24-yearperiodfrom 1962–1986.Wewishtopredicttradingvolume onanyday,giventhehistoryonallearlierdays.Totheleftoftheredbar(January
+
+2, 1980) is training data, and to the right test data.
+
+• Log trading volume.Thisisthefractionofalloutstandingsharesthat are traded on that day, relative to a 100-day moving average of past turnover, on the log scale.
+
+• Dow Jones return. This is the difference between the log of the Dow
+
+Jones Industrial Index on consecutive trading days.
+
+• Log volatility. This is based on the absolute values of daily price movements.
+
+Predictingstockpricesisanotoriouslyhardproblem,butitturnsoutthat predictingtradingvolumebasedonrecentpasthistoryismoremanageable
+
+(and is useful for planning trading strategies).
+
+An observation here consists of the measurements (v ,r ,z ) on day t, in t t t this case the values for log_volume, DJ_return and log_volatility. There areatotalof T =6,051 suchtriples,eachofwhichisplottedasatimeseries in Figure 10.14. One feature that strikes us immediately is that the day- to-day observations are not independent of each other. The series exhibit auto-correlation — in this case values nearby in time tend to be similar auto- to each other. This distinguishes time series from other data sets we have correlation encountered, in which observations can be assumed to be independent of
+
+422 10. Deep Learning
+
+0 5 10 15 20 25 30 35
+
+8.0
+
+4.0
+
+0.0
+
+Log( Trading Volume)
+
+Lag noitcnu F noitalerrocotu A
+
+FIGURE 10.15. The autocorrelation function for log_volume. We see that nearby values are fairly strongly correlated, with correlations above 0.2 as far as
+
+20 days apart.
+
+each other. To be clear, consider pairs of observations (v ,v ), a lag of % t t $
+
+− lag daysapart.Ifwetakeallsuchpairsinthev seriesandcomputetheircorre- t lationcoefficient,thisgivestheautocorrelationatlag%.Figure 10.15 shows the autocorrelation function for all lags up to 37, and we see considerable correlation.
+
+Another interesting characteristic of this forecasting problem is that the response variable v t — log_volume — is also a predictor! In particular, we will use the past values of log_volume to predict values in the future.
+
+RNN forecaster
+
+We wish to predict a value v from past values v ,v ,..., and also to t t 1 t 2
+
+− − makeuseofpastvaluesoftheotherseriesr ,r ,... andz ,z ,....
+
+t 1 t 2 t 1 t 2
+
+− − − −
+
+Although our combined data is quite a long series with 6,051 trading days,thestructureoftheproblemisdifferentfromthepreviousdocument- classification example.
+
+• We only have one series of data, not 25,000.
+
+• We have an entire series of targets v , and the inputs include past t values of this series.
+
+How do we represent this problem in terms of the structure displayed in
+
+Figure 10.12? The idea is to extract many short mini-series of input se- quences X = X ,X ,...,X with a predefined length L (called the lag
+
+1 2 L
+
+{ } lag in this context), and a corresponding target Y. They have the form v v v t L t L+1 t 1
+
+− − −
+
+X = r , X = r , ,X = r , and Y =v .
+
+1 t L 2 t L+1 L t 1 t
+
+ −   −  ···  −  z z z t L t L+1 t 1
+
+− − −
+
+      (10.20)
+
+So here the target Y is the value of log_volume v t at a single timepoint t, and the input sequence X is the series of 3-vectors X L each consisting
+
+{ $ }1 ofthethreemeasurementslog_volume,DJ_returnandlog_volatilityfrom day t L, t L+1, up to t 1. Each value of t makes a separate (X,Y)
+
+− − − pair, for t running from L+1 to T. For the NYSE data we will use the past
+
+10.5 Recurrent Neural Networks 423
+
+1980 1982 1984 1986
+
+0.1
+
+5.0
+
+0.0
+
+0.1−
+
+Test Period: Observed and Predicted
+
+Year
+
+)emulo V gnidar T(gol
+
+FIGURE 10.16. RNN forecast of log_volume on the NYSE test data. The black lines are the true volumes, and the superimposed orange the forecasts. The fore- casted series accounts for 42% of the variance of log_volume.
+
+five trading days to predict the next day’s trading volume. Hence, we use
+
+L = 5. Since T = 6,051, we can create 6,046 such (X,Y) pairs. Clearly L is a parameter that should be chosen with care, perhaps using validation data.
+
+We fit this model with K = 12 hidden units using the 4,281 training sequencesderivedfromthedatabefore January 2,1980(see Figure 10.14), and then used it to forecast the 1,770 values of log_volume after this date.
+
+We achieve an R2 = 0.42 on the test data. Details are given in Sec- tion 10.9.6. As a straw man,19 using yesterday’s value for log_volume as the prediction for today has R2 = 0.18. Figure 10.16 shows the forecast results.Wehaveplottedtheobservedvaluesofthedailylog_volumeforthe test period 1980–1986 in black, and superimposed the predicted series in orange. The correspondence seems rather good.
+
+In forecasting the value of log_volume in the test period, we have to use the test data itself in forming the input sequences X. This may feel like cheating, but in fact it is not; we are always using past data to predict the future.
+
+Autoregression
+
+The RNNwejustfithasmuchincommonwithatraditionalautoregression auto-
+
+(AR)linearmodel,whichwepresentnowforcomparison.Wefirstconsider regression the response sequence v alone, and construct a response vector y and a t matrix M of predictors for least squares regression as follows: v 1 v v v
+
+L+1 L L 1 1
+
+− ··· v 1 v v v
+
+L+2 L+1 L 2
+
+   ···  v 1 v v v y= L+3 M= L+2 L+1 3 . (10.21)
+
+···
+
+
+
+
+
+. .
+
+.
+
+
+
+
+
+
+
+
+
+. .
+
+.
+
+. .
+
+.
+
+. .
+
+.
+
+... . .
+
+.
+
+
+
+
+
+   
+
+ v   1 v v v 
+
+ T   T − 1 T − 2 ··· T − L 
+
+   
+
+M and y each have T L rows, one per observation. We see that the
+
+− predictors for any given response v on day t are the previous L values t
+
+19A straw man here refers to a simple and sensible prediction that can be used as a baselineforcomparison.
+
+424 10. Deep Learning of the same series. Fitting a regression of y on M amounts to fitting the model vˆ =βˆ +βˆ v +βˆ v + +βˆ v , (10.22) t 0 1 t 1 2 t 2 L t L
+
+− − ··· − and is called an order-L autoregressive model, or simply AR(L). For the
+
+NYSE datawecaninclude laggedversionsof DJ_return and log_volatility, r and z , in the predictor matrix M, resulting in 3L+1 columns. An AR t t model with L = 5 achieves a test R2 of 0.41, slightly inferior to the 0.42 achieved by the RNN.
+
+Of course the RNN and AR models are very similar. They both use the same response Y and input sequences X of length L = 5 and dimen- sion p = 3 in this case. The RNN processes this sequence from left to right with the same weights W (for the input layer), while the AR model simply treats all L elements of the sequence equally as a vector of L p
+
+× predictors — a process called flattening in the neural network literature.
+
+flattening
+
+Of course the RNN also includes the hidden layer activations A which
+
+$ transfer information along the sequence, and introduces additional nonlin- earity. From (10.19) with K = 12 hidden units, we see that the RNN has
+
+13+12 (1+3+12)=205 parameters, compared to the 16 for the AR(5)
+
+× model.
+
+An obvious extension of the AR model is to use the set of lagged predic- tors as the input vector to an ordinary feedforward neural network (10.1), and hence add more flexibility. This achieved a test R2 = 0.42, slightly better than the linear AR, and the same as the RNN.
+
+All the models can be improved by including the variable day_of_week corresponding to the day t of the target v (which can be learned from the t calendar dates supplied with the data); trading volume is often higher on
+
+Mondays and Fridays. Since there are five trading days, this one-hot en- codestofivebinaryvariables.Theperformanceofthe ARmodelimproved to R2 = 0.46 as did the RNN, and the nonlinear AR model improved to
+
+R2 =0.47.
+
+We used the most simple version of the RNN in our examples here.
+
+Additionalexperimentswiththe LSTMextensionofthe RNNyieldedsmall improvements, typically of up to 1% in R2 in these examples.
+
+We give details of how we fit all three models in Section 10.9.6.
+
+10.5.3 Summary of RNNs
+
+We have illustrated RNNs through two simple use cases, and have only scratched the surface.
+
+There are many variations and enhancements of the simple RNN we used for sequence modeling. One approach we did not discuss uses a one- dimensional convolutional neural network, treating the sequence of vectors
+
+(say words, as represented in the embedding space) as an image. The con- volution filter slides along the sequence in a one-dimensional fashion, with the potential to learn particular phrases or short subsequences relevant to the learning task.
+
+One can also have additional hidden layers in an RNN. For example, with two hidden layers, the sequence A is treated as an input sequence to
+
+$ the next hidden layer in an obvious fashion.
+
+10.6 When to Use Deep Learning 425
+
+The RNN we used scanned the document from beginning to end; alter- native bidirectional RNNs scan the sequences in both directions.
+
+bidirectional
+
+In language translation the target is also a sequence of words, in a language different from that of the input sequence. Both the input se- quence and the target sequence are represented by a structure similar to
+
+Figure 10.12, and they share the hidden units. In this so-called Seq 2Seq
+
+Seq 2Seq learning, the hidden units are thought to capture the semantic meaning of the sentences. Some of the big breakthroughs in language modeling and translationresultedfromtherelativelyrecentimprovementsinsuch RNNs.
+
+Algorithmsusedtofit RNNscanbecomplexandcomputationallycostly.
+
+Fortunately, good software protects users somewhat from these complexi- ties,andmakesspecifyingandfittingthesemodelsrelativelypainless.Many of the models that we enjoy in daily life (like Google Translate) use state- of-the-artarchitecturesdevelopedbyteamsofhighlyskilledengineers,and have been trained using massive computational and data resources.
+
+10.6 When to Use Deep Learning
+
+The performance of deep learning in this chapter has been rather impres- sive. It nailed the digit classification problem, and deep CNNs have really revolutionizedimageclassification.Weseedailyreportsofnewsuccesssto- ries for deep learning. Many of these are related to image classification tasks, such as machine diagnosis of mammograms or digital X-ray images, ophthalmology eye scans, annotations of MRI scans, and so on. Likewise there are numerous successes of RNNs in speech and language translation, forecasting, and document modeling. The question that then begs an an- sweris:shouldwediscardallouroldertools,andusedeeplearningonevery problemwithdata? Toaddressthisquestion,werevisitour Hittersdataset from Chapter 6.
+
+This is a regression problem, where the goal is to predict the Salary of a baseball player in 1987 using his performance statistics from 1986. After removing players with missing responses, we are left with 263 players and
+
+19 variables. We randomly split the data into a training set of 176 players
+
+(twothirds),andatestsetof 87 players(onethird).Weusedthreemethods for fitting a regression model to these data.
+
+• Alinearmodelwasusedtofitthetrainingdata,andmakepredictions on the test data. The model has 20 parameters.
+
+• The same linear model was fit with lasso regularization. The tuning parameter was selected by 10-fold cross-validation on the training data.Itselectedamodelwith 12 variableshavingnonzerocoefficients.
+
+• A neural network with one hidden layer consisting of 64 Re LU units was fit to the data. This model has 1,345 parameters.20
+
+20The model was fit by stochastic gradient descent with a batch size of 32 for 1,000 epochs, and 10% dropout regularization. The test error performance flattened out and startedtoslowlyincreaseafter 1,000 epochs.Thesefittingdetailsarediscussedin Sec- tion 10.7.
+
+426 10. Deep Learning
+
+Model # Parameters Mean Abs. Error Test Set R2
+
+Linear Regression 20 254.7 0.56
+
+Lasso 12 252.3 0.51
+
+Neural Network 1345 257.4 0.54
+
+TABLE 10.2. Prediction results on the Hitters test data for linear models fit byordinaryleastsquaresandlasso,comparedtoaneuralnetworkfitbystochastic gradient descent with dropout regularization.
+
+Coefficient Std. error t-statistic p-value
+
+Intercept -226.67 86.26 -2.63 0.0103
+
+Hits 3.06 1.02 3.00 0.0036
+
+Walks 0.181 2.04 0.09 0.9294
+
+CRuns 0.859 0.12 7.09 <0.0001
+
+Put Outs 0.465 0.13 3.60 0.0005
+
+TABLE 10.3. Least squares coefficient estimates associated with the regres- sion of Salary on four variables chosen by lasso on the Hitters data set. This model achieved the best performance on the test data, with a mean absolute error of 224.8. The results reported here were obtained from a regression on the test data, which was not used in fitting the lasso model.
+
+Table 10.2 compares the results. We see similar performance for all three models. We report the mean absolute error on the test data, as well as the test R2 for each method, which are all respectable (see Exercise 5).
+
+We spent a fair bit of time fiddling with the configuration parameters of theneuralnetworktoachievetheseresults.Itispossiblethatifwewereto spendmoretime,andgottheformandamountofregularizationjustright, that we might be able to match or even outperform linear regression and the lasso. But with great ease we obtained linear models that work well.
+
+Linear models are much easier to present and understand than the neural network, which is essentially a black box. The lasso selected 12 of the 19 variables in making its prediction. So in cases like this we are much better offfollowingthe Occam’s razorprinciple:whenfacedwithseveralmethods
+
+Occam’s that give roughly equivalent performance, pick the simplest.
+
+razor
+
+After a bit more exploration with the lasso model, we identified an even simplermodelwithfourvariables.Wethenrefitthelinearmodelwiththese fourvariablestothetrainingdata(theso-calledrelaxedlasso),andachieved a test mean absolute error of 224.8, the overall winner! It is tempting to present the summary table from this fit, so we can see coefficients and p- values; however, since the model was selected on the training data, there wouldbeselection bias.Instead,werefitthemodelonthetestdata,which was not used in the selection. Table 10.3 shows the results.
+
+Wehaveanumberofverypowerfultoolsatourdisposal,includingneural networks, random forests and boosting, support vector machines and gen- eralized additive models, to name a few. And then we have linear models, andsimplevariantsofthese.Whenfacedwithnewdatamodelingandpre- diction problems, it’s tempting to always go for the trendy new methods.
+
+Often they give extremely impressive results, especially when the datasets are very large and can support the fitting of high-dimensional nonlinear models. However, if we can produce models with the simpler tools that
+
+10.7 Fitting a Neural Network 427 perform as well, they are likely to be easier to fit and understand, and po- tentiallylessfragilethanthemorecomplexapproaches.Whereverpossible, it makes sense to try the simpler models as well, and then make a choice based on the performance/complexity tradeoff.
+
+Typically we expect deep learning to be an attractive choice when the samplesizeofthetrainingsetisextremelylarge,andwheninterpretability of the model is not a high priority.
+
+10.7 Fitting a Neural Network
+
+Fittingneuralnetworksissomewhatcomplex,andwegiveabriefoverview here. The ideas generalize to much more complex networks. Readers who find this material challenging can safely skip it. Fortunately, as we see in the lab at the end of this chapter, good software is available to fit neural networkmodelsinarelativelyautomatedway,withoutworryingaboutthe technical details of the model-fitting procedure.
+
+Westartwiththesimplenetworkdepictedin Figure 10.1 in Section 10.1.
+
+In model (10.1) the parameters are β =(β ,β ,...,β ), as well as each of
+
+0 1 K thew =(w ,w ,...,w ), k =1,...,K.Givenobservations(x ,y ), i= k k 0 k 1 kp i i
+
+1,...,n,wecouldfitthemodelbysolvinganonlinearleastsquaresproblem n
+
+1 minimize (y f(x ))2, (10.23) i i
+
+{ wk} K
+
+1
+
+,β 2
+
+0 i=1
+
+− where
+
+K p f(x )=β + β g w + w x . (10.24) i 0 k k 0 kj ij k 0 =1 1 0 j=1 2
+
+The objective in (10.23) looks simple enough, but because of the nested arrangementoftheparametersandthesymmetryofthehiddenunits,itis not straightforward to minimize. The problem is nonconvex in the param- eters, and hence there are multiple solutions. As an example, Figure 10.17 shows a simple nonconvex function of a single variable θ; there are two solutions: one is a local minimum and the other is a global minimum. Fur- local thermore,(10.1)istheverysimplestofneuralnetworks;inthischapterwe minimum have presented much more complex ones where these problems are com- global pounded.Toovercomesomeoftheseissuesandtoprotectfromoverfitting, minimum two general strategies are employed when fitting neural networks.
+
+• Slow Learning: the model is fit in a somewhat slow iterative fash- ion, using gradient descent. The fitting process is then stopped when gradient overfitting is detected.
+
+descent
+
+• Regularization:penaltiesareimposedontheparameters,usuallylasso or ridge as discussed in Section 6.2.
+
+Suppose we represent all the parameters in one long vector θ. Then we can rewrite the objective in (10.23) as n
+
+1
+
+R(θ)= (y f (x ))2, (10.25) i θ i
+
+2 − i=1
+
+0
+
+428 10. Deep Learning
+
+−1.0 −0.5 0.0 0.5 1.0
+
+FIGURE 10.17. Illustration of gradient descent for one-dimensional θ. The objective function R(θ) is not convex, and has two minima, one at θ = 0.46
+
+−
+
+(local), the other at θ = 1.02 (global). Starting at some value θ0 (typically ran- domly chosen), each step in θ moves downhill — against the gradient — until it cannot go down any further. Here gradient descent reached the global minimum in 7 steps.
+
+where we make explicit the dependence of f on the parameters. The idea of gradient descent is very simple.
+
+1. Start with a guess θ0 for all the parameters in θ, and set t=0.
+
+2. Iterate until the objective (10.25) fails to decrease:
+
+(a) Findavectorδthatreflectsasmallchangeinθ,suchthatθt+1 =
+
+θt+δ reduces the objective; i.e. such that R(θt+1)<R(θt).
+
+(b) Set t t+1.
+
+←
+
+One can visualize (Figure 10.17) standing in a mountainous terrain, and the goal is to get to the bottom through a series of steps. As long as each step goes downhill, we must eventually get to the bottom. In this case we were lucky, because with our starting guess θ0 we end up at the global minimum. In general we can hope to end up at a (good) local minimum.
+
+10.7.1 Backpropagation
+
+Howdowefindthedirectionstomoveθsoastodecreasetheobjective R(θ) in (10.25)? The gradient of R(θ), evaluated at some current value θ =θm, gradient is the vector of partial derivatives at that point:
+
+∂R(θ)
+
+R(θm)= . (10.26)
+
+∇ ∂θ θ=θm
+
+V
+
+Thesubscriptθ =θm meansthataftercomp V Vutingthevectorofderivatives, we evaluate it at the current guess, θm. This gives the direction in θ-space in which R(θ) increases most rapidly. The idea of gradient descent is to move θ a little in the opposite direction (since we wish to go downhill):
+
+θm+1 θm ρ R(θm). (10.27)
+
+← − ∇
+
+6
+
+5
+
+4
+
+3
+
+2
+
+1
+
+0
+
+θ
+
+)θ(R
+
+R(
+
+●
+
+θ0) R(θ1)
+
+●
+
+R(θ2)
+
+● R(θ7)
+
+●
+
+θ0 θ1 θ2 θ7
+
+10.7 Fitting a Neural Network 429
+
+For a small enough value of the learning rate ρ, this step will decrease the learningrate objective R(θ); i.e. R(θm+1) R(θm). If the gradient vector is zero, then
+
+≤ we may have arrived at a minimum of the objective.
+
+How complicated is the calculation (10.26)? It turns out that it is quite simple here, and remains simple even for much more complex networks, because of the chain rule of differentiation.
+
+Since R(θ) = n R (θ) = 1 n (y f (x ))2 is a sum, its gradient chainrule i=1 i 2 i=1 i − θ i is also a sum over the n observations, so we will just examine one of these
+
+) ) terms,
+
+K p
+
+1 2
+
+R (θ)= y β β g w + w x . (10.28) i i 0 k k 0 kj ij
+
+2 − −
+
+1 k 0 =1 ’ 0 j=1 (2
+
+To simplify the expressions to follow, we write z = w + p w x .
+
+ik k 0 j=1 kj ij
+
+First we take the derivative with respect to β : k
+
+)
+
+∂R (θ) ∂R (θ) ∂f (x ) i i θ i
+
+=
+
+∂β ∂f (x ) · ∂β k θ i k
+
+= (y f (x )) g(z ). (10.29) i θ i ik
+
+− − ·
+
+And now we take the derivative with respect to w : kj
+
+∂R (θ) ∂R (θ) ∂f (x ) ∂g(z ) ∂z i i θ i ik ik
+
+=
+
+∂w ∂f (x ) · ∂g(z ) · ∂z · ∂w kj θ i ik ik kj
+
+= (y i f θ (x i )) β k g $ (z ik ) x ij . (10.30)
+
+− − · · ·
+
+Notice that both these expressions contain the residual y f (x ). In i θ i
+
+−
+
+(10.29) we see that a fraction of that residual gets attributed to each of the hidden units according to the value of g(z ). Then in (10.30) we see ik a similar attribution to input j via hidden unit k. So the act of differen- tiation assigns a fraction of the residual to each of the parameters via the chain rule — a process known as backpropagation in the neural network backprop- literature. Although these calculations are straightforward, it takes careful agation bookkeeping to keep track of all the pieces.
+
+10.7.2 Regularization and Stochastic Gradient Descent
+
+Gradient descent usually takes many steps to reach a local minimum. In practice, there are a number of approaches for accelerating the process.
+
+Also, when n is large, instead of summing (10.29)–(10.30) over all n ob- servations, we can sample a small fraction or minibatch of them each time minibatch we compute a gradient step. This process is known as stochastic gradient descent(SGD)andisthestateoftheartforlearningdeepneuralnetworks.
+
+stochastic
+
+Fortunately, there is very good software for setting up deep learning mod- gradient els, and for fitting them to data, so most of the technicalities are hidden descent from the user.
+
+We now turn to the multilayer network (Figure 10.4) used in the digit recognitionproblem.Thenetworkhasover 235,000 weights,whichisaround fourtimesthenumberoftrainingexamples.Regularizationisessentialhere
+
+430 10. Deep Learning
+
+0 5 10 15 20 25 30
+
+4.0
+
+3.0
+
+2.0
+
+1.0
+
+Epochs noitcnu F evitcejb O fo eula V
+
+Training Set
+
+Validation Set
+
+0 5 10 15 20 25 30
+
+21.0
+
+01.0
+
+80.0
+
+60.0
+
+40.0
+
+20.0
+
+00.0
+
+Epochs rorr E noitacifissal C
+
+FIGURE10.18.Evolutionoftrainingandvalidationerrorsforthe MNISTneural network depicted in Figure 10.4, as a function of training epochs. The objective refers to the log-likelihood (10.14).
+
+toavoidoverfitting.Thefirstrowin Table 10.1 usesridgeregularizationon the weights. This is achieved by augmenting the objective function (10.14) with a penalty term: n 9
+
+R(θ;λ)= y log(f (x ))+λ θ2. (10.31)
+
+− im m i j i=1 m=0 j
+
+0 0 0
+
+Theparameterλisoftenpresetatasmallvalue,orelseitisfoundusingthe validation-setapproachof Section 5.3.1.Wecanalsousedifferentvaluesof
+
+λ for the groups of weights from different layers; in this case W and W
+
+1 2 were penalized, while the relatively few weights B of the output layer were not penalized at all. Lasso regularization is also popular as an additional form of regularization, or as an alternative to ridge.
+
+Figure 10.18 shows some metrics that evolve during the training of the network on the MNIST data. It turns out that SGD naturally enforces its own form of approximately quadratic regularization.21 Here the minibatch sizewas 128 observationspergradientupdate.Thetermepochslabelingthe epochs horizontalaxisin Figure 10.18 countsthenumberoftimesanequivalentof thefulltrainingsethasbeenprocessed.Forthisnetwork,20%ofthe 60,000 training observations were used as a validation set in order to determine when training should stop. So in fact 48,000 observations were used for training,andhencethereare 48,000/128 375 minibatchgradientupdates
+
+≈ per epoch. We see that the value of the validation objective actually starts toincreaseby 30 epochs,soearlystoppingcanalsobeusedasanadditional early form of regularization.
+
+stopping
+
+21Thisandotherpropertiesof SGDfordeeplearningarethesubjectofmuchresearch inthemachinelearningliteratureatthetimeofwriting.
+
+10.7 Fitting a Neural Network 431
+
+FIGURE 10.19.Dropout Learning. Left: a fully connected network. Right: net- work with dropout in the input and hidden layer. The nodes in grey are selected at random, and ignored in an instance of training.
+
+10.7.3 Dropout Learning
+
+The second row in Table 10.1 is labeled dropout. This is a relatively new dropout and efficient form of regularization, similar in some respects to ridge reg- ularization. Inspired by random forests (Section 8.2), the idea is to ran- domly remove a fraction φ of the units in a layer when fitting the model.
+
+Figure 10.19 illustrates this. This is done separately each time a training observation is processed. The surviving units stand in for those missing, and their weights are scaled up by a factor of 1/(1 φ) to compensate.
+
+−
+
+This prevents nodes from becoming over-specialized, and can be seen as a form of regularization. In practice dropout is achieved by randomly set- ting the activations for the “dropped out” units to zero, while keeping the architecture intact.
+
+10.7.4 Network Tuning
+
+The network in Figure 10.4 is considered to be relatively straightforward; it nevertheless requires a number of choices that all have an effect on the performance:
+
+• The number of hidden layers, and the number of units per layer.
+
+Modern thinking is that the number of units per hidden layer can be large, and overfitting can be controlled via the various forms of regularization.
+
+• Regularization tuning parameters. These include the dropout rate φ andthestrengthλoflassoandridgeregularization,andaretypically set separately at each layer.
+
+• Details of stochastic gradient descent. These include the batch size, thenumberofepochs,andifused,detailsofdataaugmentation(Sec- tion 10.3.4.)
+
+Choicessuchasthesecan makeadifference.Inpreparing this MNIST exam- ple, we achieved a respectable 1.8% misclassification error after some trial and error. Finer tuning and training of a similar network can get under
+
+1% error on these data, but the tinkering process can be tedious, and can result in overfitting if done carelessly.
+
+432 10. Deep Learning
+
+2 5 10 20 50
+
+0.2
+
+5.1
+
+0.1
+
+5.0
+
+0.0
+
+Degrees of Freedom rorr E
+
+Training Error
+
+Test Error
+
+FIGURE 10.20.Doubledescentphenomenon,illustratedusingerrorplotsfora one-dimensionalnaturalsplineexample.Thehorizontalaxisreferstothenumber of spline basis functions on the log scale. The training error hits zero when the degrees of freedom coincides with the sample size n = 20, the “interpolation threshold”, and remains zero thereafter. The test error increases dramatically at this threshold, but then descends again to a reasonable value before finally increasing again.
+
+10.8 Interpolation and Double Descent
+
+Throughoutthisbook,wehaverepeatedlydiscussedthebias-variancetrade- off, first presented in Section 2.2.2. This trade-off indicates that statistical learningmethodstendtoperformthebest,intermsoftest-seterror,foran intermediate level of model complexity. In particular, if we plot “flexibil- ity” on the x-axis and error on the y-axis, then we generally expect to see that test error has a U-shape, whereas training error decreases monotoni- cally.Two“typical”examplesofthisbehaviorcanbeseenintheright-hand panelof Figure 2.9 onpage 29,andin Figure 2.17 onpage 39.Oneimplica- tion of the bias-variance trade-off is that it is generally not a good idea to interpolate the training data — that is, to get zero training error — since interpolate that will often result in very high test error.
+
+However,itturnsoutthatincertainspecificsettingsitcanbepossiblefor astatisticallearningmethodthatinterpolatesthetrainingdatatoperform well — or at least, better than a slightly less complex model that does not quite interpolate the data. This phenomenon is known as double descent, and is displayed in Figure 10.20. “Double descent” gets its name from the fact that the test error has a U-shape before the interpolation threshold is reached,andthenitdescendsagain(forawhile,atleast)asanincreasingly flexible model is fit.
+
+We now describe the set-up that resulted in Figure 10.20. We simulated n=20 observations from the model
+
+Y =sin(X)+", where X U[ 5,5](uniformdistribution),and" N(0,σ2)withσ =0.3.
+
+∼ − ∼
+
+Wethenfitanaturalsplinetothedata,asdescribedin Section 7.4,withd
+
+10.8 Interpolation and Double Descent 433
+
+−4 −2 0 2 4
+
+3
+
+2
+
+1
+
+0
+
+1−
+
+2−
+
+3−
+
+8 Degrees of Freedom
+
+−4 −2 0 2 4 seq(−5, 5, len = 1000)
+
+3
+
+2
+
+1
+
+0
+
+1−
+
+2−
+
+3−
+
+20 Degrees of Freedom seq(−5, 5, len = 1000)
+
+))0001
+
+= nel
+
+,5
+
+,5−(qes(f
+
+−4 −2 0 2 4
+
+3
+
+2
+
+1
+
+0
+
+1−
+
+2−
+
+3−
+
+42 Degrees of Freedom
+
+−4 −2 0 2 4
+
+3
+
+2
+
+1
+
+0
+
+1−
+
+2−
+
+3−
+
+80 Degrees of Freedom
+
+))0001
+
+= nel
+
+,5
+
+,5−(qes(f
+
+FIGURE 10.21. Fitted functions fˆ d (X) (orange), true function f(X) (black) andtheobserved 20 trainingdatapoints.Adifferentvalueofd(degreesoffreedom) is used in each panel. For d 20 the orange curves all interpolate the training
+
+≥ points, and hence the training error is zero.
+
+degrees of freedom.22 Recall from Section 7.4 that fitting a natural spline with d degrees of freedom amounts to fitting a least-squares regression of the response onto a set of d basis functions. The upper-left panel of
+
+Figure 10.21 showsthedata,thetruefunctionf(X),andfˆ(X),thefitted
+
+8 natural spline with d=8 degrees of freedom.
+
+Next,wefitanaturalsplinewithd=20 degreesoffreedom.Sincen=20, this means that n=d, and we have zero training error; in other words, we haveinterpolatedthetrainingdata!Wecanseefromthetop-rightpanelof
+
+Figure 10.21 that fˆ (X) makes wild excursions, and hence the test error
+
+20 will be large.
+
+Wenowcontinuetofitnaturalsplinestothedata,withincreasingvalues of d. For d > 20, the least squares regression of Y onto d basis functions is not unique: there are an infinite number of least squares coefficient es- timates that achieve zero error. To select among them, we choose the one with the smallest sum of squared coefficients, d βˆ2.
+
+This is known as j=1 j the minimum-norm solution.
+
+)
+
+The two lower panels of Figure 10.21 show the minimum-norm natural spline fits with d = 42 and d = 80 degrees of freedom. Incredibly, fˆ (X)
+
+42 is quite a bit less less wild than fˆ (X), even though it makes use of more
+
+20 degrees of freedom. And fˆ (X) is not much different. How can this be?
+
+80
+
+Essentially,fˆ (X)isverywildbecausethereisjustasinglewaytointerpo-
+
+20 late n=20 observations using d=20 basis functions, and that single way results in a somewhat extreme fitted function. By contrast, there are an
+
+22Thisimpliesthechoiceofdknots,herechosenatdequi-probabilityquantilesofthe trainingdata.Whend>n,thequantilesarefoundbyinterpolation.
+
+434 10. Deep Learning infinite number of ways to interpolate n=20 observations using d=42 or d=80 basisfunctions,andthesmoothestofthem—thatis,theminimum norm solution — is much less wild than fˆ (X)!
+
+20
+
+In Figure 10.20, we display the training error and test error associated with fˆ(X), for a range of values of the degrees of freedom d. We see that d the training error drops to zero once d = 20 and beyond; i.e. once the interpolation threshold is reached. By contrast, the test error shows a U- shape for d 20, grows extremely large around d = 20, and then shows a
+
+≤ second region of descent for d > 20. For this example the signal-to-noise ratio — Var(f(X))/σ2 — is 5.9, which is quite high (the data points are closetothetruecurve).Soanestimatethatinterpolatesthedataanddoes not wander too far inbetween the observed data points will likely do well.
+
+In Figures 10.20 and 10.21, we have illustrated the double descent phe- nomenon in a simple one-dimensional setting using natural splines. How- ever, it turns out that the same phenomenon can arise for deep learning.
+
+Basically, when we fit neural networks with a huge number of parameters, we are sometimes able to get good results with zero training error. This is particularlytrueinproblemswithhighsignal-to-noiseratio,suchasnatural image recognition and language translation, for example. This is because the techniques used to fit neural networks, including stochastic gradient descent, naturally lend themselves to selecting a “smooth” interpolating model that has good test-set performance on these kinds of problems.
+
+Some points are worth emphasizing:
+
+• Thedouble-descentphenomenondoesnotcontradictthebias-variance trade-off, as presented in Section 2.2.2. Rather, the double-descent curve seen in the right-hand side of Figure 10.20 is a consequence of the fact that the x-axis displays the number of spline basis functions used,whichdoesnotproperlycapturethetrue“flexibility”ofmodels that interpolate the training data. Stated another way, in this exam- ple,theminimum-normnaturalsplinewithd=42 haslowervariance than the natural spline with d=20.
+
+• Mostofthestatisticallearningmethodsseeninthisbookdonotexhibit double descent. For instance, regularization approaches typically do not interpolate the training data, and thus double descent does not occur. This is not a drawback of regularized methods: they can give great results without interpolating the data!
+
+In particular, in the examples here, if we had fit the natural splines using ridge regression with an appropriately-chosen penalty rather than least squares, then we would not have seen double descent, and in fact would have obtained better test error results.
+
+• In Chapter 9, we saw that maximal margin classifiers and SVMs that havezerotrainingerrornonethelessoftenachieveverygoodtesterror.
+
+This is in part because those methods seek smooth minimum norm solutions. This is similar to the fact that the minimum-norm natural spline can give good results with zero training error.
+
+• The double-descent phenomenon has been used by the machine learn- ing community to explain the successful practice of using an over-
+
+10.9 Lab: Deep Learning 435 parametrized neural network (many layers, and many hidden units), and then fitting all the way to zero training error. However, fitting to zero error is not always optimal, and whether it is advisable de- pends on the signal-to-noise ratio. For instance, we may use ridge regularization to avoid overfitting a neural network, as in (10.31). In this case, provided that we use an appropriate choice for the tuning parameter λ, we will never interpolate the training data, and thus will not see the double descent phenomenon. Nonetheless we can get very good test-set performance, likely much better than we would have achieved had we interpolated the training data. Early stopping duringstochasticgradientdescentcanalsoserveasaformofregular- ization that prevents us from interpolating the training data, while still getting very good results on test data.
+
+To summarize: though double descent can sometimes occur in neural net- works, we typically do not want to rely on this behavior. Moreover, it is important to remember that the bias-variance trade-off always holds
+
+(though it is possible that test error as a function of flexibility may not exhibit a U-shape, depending on how we have parametrized the notion of
+
+“flexibility” on the x-axis).
+
+10.9 Lab: Deep Learning
+
+In this section we demonstrate how to fit the examples discussed in the text. We use the Python torch package, along with the pytorch_lightning torch package which provides utilities to simplify fitting and evaluating mod- pytorch_ els. This code can be impressively fast with certain special processors, lightning such as Apple’s new M1 chip. The package is well-structured, flexible, and will feel comfortable to Python users. A good companion is the site py- torch.org/tutorials. Much of our code is adapted from there, as well as the pytorch_lightning documentation.23
+
+We start with several standard imports that we have seen before.
+
+In[1]: import numpy as np, pandas as pd from matplotlib.pyplot import subplots from sklearn.linear_model import \
+
+(Linear Regression,
+
+Logistic Regression,
+
+Lasso) from sklearn.preprocessing import Standard Scaler from sklearn.model_selection import KFold from sklearn.pipeline import Pipeline from ISLP import load_data from ISLP.models import Model Spec as MS from sklearn.model_selection import \
+
+(train_test_split,
+
+Grid Search CV)
+
+23The precise URLs at the time of writing are https://pytorch.org/tutorials/ beginner/basics/intro.html and https://pytorch-lightning.readthedocs.io/en/ latest/.
+
+436 10. Deep Learning
+
+Torch-Specific Imports
+
+There are a number of imports for torch. (These are not included with
+
+ISLP, so must be installed separately.) First we import the main library and essential tools used to specify sequentially-structured networks.
+
+In[2]: import torch from torch import nn from torch.optim import RMSprop from torch.utils.data import Tensor Dataset
+
+There are several other helper packages for torch. For instance, the torchmetrics package has utilities to compute various metrics to evalu- torchmetrics ate performance when fitting a model. The torchinfo package provides a torchinfo usefulsummaryofthelayersofamodel.Weusetheread_image()function read_image() when loading test images in Section 10.9.4.
+
+In[3]: from torchmetrics import (Mean Absolute Error,
+
+R2Score) from torchinfo import summary from torchvision.io import read_image
+
+The package pytorch_lightning is a somewhat higher-level interface to torchthatsimplifiesthespecificationandfittingofmodelsbyreducingthe amount of boilerplate code needed (compared to using torch alone).
+
+In[4]: from pytorch_lightning import Trainer from pytorch_lightning.loggers import CSVLogger
+
+In order to reproduce results we use seed_everything(). We will also seed_ instruct torch to use deterministic algorithms where possible.
+
+everything()
+
+In[5]: from pytorch_lightning.utilities.seed import seed_everything seed_everything(0, workers=True) torch.use_deterministic_algorithms(True, warn_only=True)
+
+We will use several datasets shipped with torchvision for our examples: torchvision a pretrained network for image classification, as well as some transforms used for preprocessing.
+
+In[6]: from torchvision.datasets import MNIST, CIFAR100 from torchvision.models import (resnet 50,
+
+Res Net 50_Weights) from torchvision.transforms import (Resize,
+
+Normalize,
+
+Center Crop,
+
+To Tensor)
+
+We have provided a few utilities in ISLP specifically for this lab. The
+
+Simple Data Module and Simple Module are simple versions of objects used in pytorch_lightning, the high-level module for fitting torch models. Al- though more advanced uses such as computing on graphical processing units (GPUs) and parallel data processing are possible in this module, we will not be focusing much on these in this lab. The Error Tracker handles collectionsoftargetsandpredictionsovereachmini-batchinthevalidation or test stage, allowing computation of the metric over the entire validation or test data set.
+
+10.9 Lab: Deep Learning 437
+
+In[7]: from ISLP.torch import (Simple Data Module,
+
+Simple Module,
+
+Error Tracker, rec_num_workers)
+
+In addition we have included some helper functions to load the IMDb database, as well as a lookup that maps integers to particular keys in the database.We’veincludedaslightlymodifiedcopyofthepreprocessed IMDb data from keras, a separate package for fitting deep learning models. This keras saves us significant preprocessing and allows us to focus on specifying and fitting the models themselves.
+
+In[8]: from ISLP.torch.imdb import (load_lookup, load_tensor, load_sparse, load_sequential)
+
+Finally, we introduce some utility imports not directly related to torch.
+
+Theglob()functionfromtheglobmoduleisusedtofindallfilesmatching glob() wildcardcharacters,whichwewilluseinourexampleapplyingthe Res Net 50 model to some of our own images. The json module will be used to load a json
+
+JSON file for looking up classes to identify the labels of the pictures in the
+
+Res Net 50 example.
+
+In[9]: from glob import glob import json
+
+10.9.1 Single Layer Network on Hitters Data
+
+We start by fitting the models in Section 10.6 on the Hitters data.
+
+In[10]: Hitters = load_data('Hitters').dropna() n = Hitters.shape[0]
+
+We will fit two linear models (least squares and lasso) and compare their performance to that of a neural network. For this comparison we will use mean absolute error on a validation dataset.
+
+n
+
+1
+
+MAE(y,yˆ)= y yˆ .
+
+i i n | − | i=1
+
+0
+
+We set up the model matrix and the response.
+
+In[11]: model = MS(Hitters.columns.drop('Salary'), intercept=False)
+
+X = model.fit_transform(Hitters).to_numpy()
+
+Y = Hitters['Salary'].to_numpy()
+
+The to_numpy() method above converts pandas data frames or series to to_numpy() numpy arrays. We do this because we will need to use sklearn to fit the lasso model, and it requires this conversion. We also use a linear regres- sion method from sklearn, rather than the method in Chapter 3 from statsmodels, to facilitate the comparisons.
+
+We now split the data into test and training, fixing the random state used by sklearn to do the split.
+
+438 10. Deep Learning
+
+In[12]: (X_train,
+
+X_test,
+
+Y_train,
+
+Y_test) = train_test_split(X,
+
+Y, test_size=1/3, random_state=1)
+
+Linear Models
+
+We fit the linear model and evaluate the test error directly.
+
+In[13]: hit_lm = Linear Regression().fit(X_train, Y_train)
+
+Yhat_test = hit_lm.predict(X_test) np.abs(Yhat_test - Y_test).mean()
+
+Out[13]:259.7153
+
+Next we fit the lasso using sklearn. We are using mean absolute error to select and evaluate a model, rather than mean squared error. The spe- cialized solver we used in Section 6.5.2 uses only mean squared error. So here, with a bit more work, we create a cross-validation grid and perform the cross-validation directly.
+
+We encode a pipeline with two steps: we first normalize the features using a Standard Scaler() transform, and then fit the lasso without further normalization.
+
+In[14]: scaler = Standard Scaler(with_mean=True, with_std=True) lasso = Lasso(warm_start=True, max_iter=30000) standard_lasso = Pipeline(steps=[('scaler', scaler),
+
+('lasso', lasso)])
+
+We need to create a grid of values for λ. As is common practice, we choose a grid of 100 values of λ, uniform on the log scale from lam_max down to 0.01*lam_max. Here lam_max is the smallest value of λ with an all- zerosolution.Thisvalueequalsthelargestabsoluteinner-productbetween any predictor and the (centered) response.24
+
+In[15]: X_s = scaler.fit_transform(X_train) n = X_s.shape[0] lam_max = np.fabs(X_s.T.dot(Y_train - Y_train.mean())).max() / n param_grid = {'alpha': np.exp(np.linspace(0, np.log(0.01), 100))
+
+* lam_max}
+
+Note that we had to transform the data first, since the scale of the vari- ables impacts the choice of λ. We now perform cross-validation using this sequence of λ values.
+
+In[16]: cv = KFold(10, shuffle=True, random_state=1) grid = Grid Search CV(lasso,
+
+24Thederivationofthisresultisbeyondthescopeofthisbook.
+
+10.9 Lab: Deep Learning 439 param_grid, cv=cv, scoring='neg_mean_absolute_error') grid.fit(X_train, Y_train);
+
+Weextractthelassomodelwithbestcross-validatedmeanabsoluteerror, and evaluate its performance on X_test and Y_test, which were not used in cross-validation.
+
+In[17]: trained_lasso = grid.best_estimator_
+
+Yhat_test = trained_lasso.predict(X_test) np.fabs(Yhat_test - Y_test).mean()
+
+Out[17]:257.2382
+
+Thisissimilartotheresultswegotforthelinearmodelfitbyleastsquares.
+
+However, these results can vary a lot for different train/test splits; we en- courage the reader to try a different seed in code block 12 and rerun the subsequent code up to this point.
+
+Specifying a Network: Classes and Inheritance
+
+To fit the neural network, we first set up a model structure that describes thenetwork.Doingsorequiresustodefinenewclassesspecifictothemodel we wish to fit. Typically this is done in pytorch by sub-classing a generic representation of a network, which is the approach we take here. Although this example is simple, we will go through the steps in some detail, since it will serve us well for the more complex examples to follow.
+
+In[18]: class Hitters Model(nn.Module): def __init__(self, input_size): super(Hitters Model, self).__init__() self.flatten = nn.Flatten() self.sequential = nn.Sequential( nn.Linear(input_size, 50), nn.Re LU(), nn.Dropout(0.4), nn.Linear(50, 1)) def forward(self, x): x = self.flatten(x) return torch.flatten(self.sequential(x))
+
+Theclassstatementidentifiesthecodechunkasadeclarationforaclass
+
+Hitters Modelthatinheritsfromthebaseclassnn.Module.Thisbaseclassis ubiquitous in torch and represents the mappings in the neural networks.
+
+Indented beneath the class statement are the methods of this class: in this case __init__ and forward. The __init__ method is called when an instance of the class is created as in the cell below. In the methods, self always refers to an instance of the class. In the __init__ method, we have attached two objects to self as attributes: flatten and sequential. These are used in the forward method to describe the map that this module implements.
+
+440 10. Deep Learning
+
+There is one additional line in the __init__ method, which is a call to super().Thisfunctionallowssubclasses(i.e.Hitters Model)toaccessmeth- super() ods of the class they inherit from. For example, the class nn.Module has its own__init__method,whichisdifferentfromthe Hitters Model.__init__() method we’ve written above. Using super() allows us to call the method of the base class. For torch models, we will always be making this super() call as it is necessary for the model to be properly interpreted by torch.
+
+Theobjectnn.Modulehasmoremethodsthansimply__init__andforward.
+
+Thesemethodsaredirectlyaccessibleto Hitters Modelinstancesbecauseof thisinheritance.Onesuchmethodwewillseeshortlyistheeval()method, used to disable dropout for when we want to evaluate the model on test data.
+
+In[19]: hit_model = Hitters Model(X.shape[1])
+
+The object self.sequential is a composition of four maps. The first maps the 19 features of Hitters to 50 dimensions, introducing 50 19+50
+
+× parametersfortheweightsandintercept ofthemap(oftencalledthebias).
+
+Thislayeristhenmappedtoa Re LUlayerfollowedbya 40%dropoutlayer, and finally a linear map down to 1 dimension, again with a bias. The total number of trainable parameters is therefore 50 19+50+50+1=1051.
+
+×
+
+The package torchinfo provides a summary() function that neatly sum- marizes this information. We specify the size of the input and see the size of each tensor as it passes through layers of the network.
+
+In[20]: summary(hit_model, input_size=X_train.shape, col_names=['input_size',
+
+'output_size',
+
+'num_params'])
+
+Out[20]:=====================================================================
+
+Layer (type:depth-idx) Input Shape Output Shape Param #
+
+=====================================================================
+
+Hitters Model [175, 19] [175] --
+
+Flatten: 1-1 [175, 19] [175, 19] --
+
+Sequential: 1-2 [175, 19] [175, 1] --
+
+Linear: 2-1 [175, 19] [175, 50] 1,000
+
+Re LU: 2-2 [175, 50] [175, 50] --
+
+Dropout: 2-3 [175, 50] [175, 50] --
+
+Linear: 2-4 [175, 50] [175, 1] 51
+
+=====================================================================
+
+Total params: 1,051
+
+Trainable params: 1,051
+
+We have truncated the end of the output slightly, here and in subsequent uses.
+
+We now need to transform our training data into a form accessible to torch. The basic datatype in torch is a tensor, which is very similar to an ndarray from early chapters. We also note here that torch typically works with 32-bit (single precision) rather than 64-bit (double precision) floatingpointnumbers.Wethereforeconvertourdatatonp.float 32 before forming the tensor. The X and Y tensors are then arranged into a Dataset
+
+Dataset
+
+10.9 Lab: Deep Learning 441 recognized by torch using Tensor Dataset().
+
+Tensor
+
+Dataset()
+
+In[21]: X_train_t = torch.tensor(X_train.astype(np.float 32))
+
+Y_train_t = torch.tensor(Y_train.astype(np.float 32)) hit_train = Tensor Dataset(X_train_t, Y_train_t)
+
+We do the same for the test data.
+
+In[22]: X_test_t = torch.tensor(X_test.astype(np.float 32))
+
+Y_test_t = torch.tensor(Y_test.astype(np.float 32)) hit_test = Tensor Dataset(X_test_t, Y_test_t)
+
+Finally, this dataset is passed to a Data Loader() which ultimately passes data into our network. While this may seem like a lot of overhead, this structureishelpfulformorecomplextaskswheredatamayliveondifferent machines, or where data must be passed to a GPU. We provide a helper function Simple Data Module() in ISLP to make this task easier for standard
+
+Simple Data usage. One of its arguments is num_workers, which indicates how many
+
+Module() processes we will use for loading the data. For small data like Hitters this will have little effect, but it does provide an advantage for the MNIST and CIFAR100 examples below. The torch package will inspect the process runninganddetermineamaximumnumberofworkers.25 We’veincludeda functionrec_num_workers()tocomputethissoweknowhowmanyworkers might be reasonable (here the max was 16).
+
+In[23]: max_num_workers = rec_num_workers()
+
+The general training setup in pytorch_lightning involves training, vali- dation and test data. These are each represented by different data loaders.
+
+During each epoch, we run a training step to learn the model and a vali- dation step to track the error. The test data is typically used at the end of training to evaluate the model.
+
+In this case, as we had split only into test and training, we’ll use the test data as validation data with the argument validation=hit_test. The validation argument can be a float between 0 and 1, an integer, or a
+
+Dataset. If a float (respectively, integer), it is interpreted as a percentage
+
+(respectivelynumber)ofthetrainingobservationstobeusedforvalidation.
+
+If it is a Dataset, it is passed directly to a data loader.
+
+In[24]: hit_dm = Simple Data Module(hit_train, hit_test, batch_size=32, num_workers=min(4, max_num_workers), validation=hit_test)
+
+Next we must provide a pytorch_lightning module that controls the steps performed during the training process. We provide methods for our
+
+Simple Module() that simply record the value of the loss function and any additionalmetricsattheendofeachepoch.Theseoperationsarecontrolled bythemethods Simple Module.[training/test/validation]_step(),though we will not be modifying these in our examples.
+
+25Thisdependsonthecomputinghardwareandthenumberofcoresavailable.
+
+442 10. Deep Learning
+
+In[25]: hit_module = Simple Module.regression(hit_model, metrics={'mae':Mean Absolute Error()})
+
+By using the Simple Module.regression() method, we indicate that we
+
+Simple Module.
+
+will use squared-error loss as in (10.23). We have also asked for mean ab- regression() solute error to be tracked as well in the metrics that are logged.
+
+We log our results via CSVLogger(), which in this case stores the results ina CSVfilewithinadirectorylogs/hitters.Afterthefittingiscomplete, this allows us to load the results as a pd.Data Frame() and visualize them below. There are several ways to log the results within pytorch_lightning, though we will not cover those here in detail.
+
+In[26]: hit_logger = CSVLogger('logs', name='hitters')
+
+Finally we are ready to train our model and log the results. We use the Trainer() object from pytorch_lightning to do this work. The argu- ment datamodule=hit_dm tells the trainer how training/validation/test logs are produced, while the first argument hit_module specifies the network architecture as well as the training/validation/test steps. The callbacks argument allows for several tasks to be carried out at various points while training a model. Here our Error Tracker() callback will enable us to com- pute validation error while training and, finally, the test error. We now fit the model for 50 epochs.
+
+In[27]: hit_trainer = Trainer(deterministic=True, max_epochs=50, log_every_n_steps=5, logger=hit_logger, callbacks=[Error Tracker()]) hit_trainer.fit(hit_module, datamodule=hit_dm)
+
+At each step of SGD, the algorithm randomly selects 32 training observa- tionsforthecomputationofthegradient.Recallfrom Section 10.7 thatan epoch amounts to the number of SGD steps required to process n observa- tions. Since the training set has n=175, and we specified a batch_size of
+
+32 in the construction of hit_dm, an epoch is 175/32=5.5 SGD steps.
+
+Afterhavingfitthemodel,wecanevaluateperformanceonourtestdata using the test() method of our trainer.
+
+In[28]: hit_trainer.test(hit_module, datamodule=hit_dm)
+
+Out[28]:[{'test_loss': 104098.5469, 'test_mae': 229.5012}]
+
+The results of the fit have been logged into a CSV file. We can find the results specific to this run in the experiment.metrics_file_path attribute of our logger. Note that each time the model is fit, the logger will output results into a new subdirectory of our directory logs/hitters.
+
+We now create a plot of the MAE (mean absolute error) as a function of the number of epochs. First we retrieve the logged summaries.
+
+hit_results = pd.read_csv(hit_logger.experiment.metrics_file_path)
+
+Since we will produce similar plots in later examples, we write a simple generic function to produce this plot.
+
+10.9 Lab: Deep Learning 443
+
+In[29]: def summary_plot(results, ax, col='loss', valid_legend='Validation', training_legend='Training', ylabel='Loss', fontsize=20): for (column, color, label) in zip([f'train_{col}_epoch', f'valid_{col}'],
+
+['black',
+
+'red'],
+
+[training_legend, valid_legend]): results.plot(x='epoch', y=column, label=label, marker='o', color=color, ax=ax) ax.set_xlabel('Epoch') ax.set_ylabel(ylabel) return ax
+
+We now set up our axes, and use our function to produce the MAE plot.
+
+In[30]: fig, ax = subplots(1, 1, figsize=(6, 6)) ax = summary_plot(hit_results, ax, col='mae', ylabel='MAE', valid_legend='Validation (=Test)') ax.set_ylim([0, 400]) ax.set_xticks(np.linspace(0, 50, 11).astype(int));
+
+We can predict directly from the final model, and evaluate its per- formance on the test data. Before fitting, we call the eval() method of hit_model. This tells torch to effectively consider this model to be fitted, sothatwecanuseittopredictonnewdata.Forourmodelhere,thebiggest change is that the dropout layers will be turned off, i.e. no weights will be randomly dropped in predicting on new data.
+
+In[31]: hit_model.eval() preds = hit_module(X_test_t) torch.abs(Y_test_t - preds).mean()
+
+Out[31]:tensor(229.5012, grad_fn=<Mean Backward 0>)
+
+Cleanup
+
+In setting up our data module, we had initiated several worker processes that will remain running. We delete all references to the torch objects to ensure these processes will be killed.
+
+444 10. Deep Learning
+
+In[32]: del(Hitters, hit_model, hit_dm, hit_logger, hit_test, hit_train,
+
+X, Y,
+
+X_test, X_train,
+
+Y_test, Y_train,
+
+X_test_t, Y_test_t, hit_trainer, hit_module)
+
+10.9.2 Multilayer Network on the MNIST Digit Data
+
+Thetorchvisionpackagecomeswithanumberofexampledatasets,includ- ing the MNIST digit data. Our first step is to retrieve the training and test datasets;the MNIST()functionwithintorchvision.datasetsisprovidedfor
+
+MNIST() this purpose. The data will be downloaded the first time this function is executed, and stored in the directory data/MNIST.
+
+In[33]: (mnist_train, mnist_test) = [MNIST(root='data', train=train, download=True, transform=To Tensor()) for train in [True, False]] mnist_train
+
+Out[33]:Dataset MNIST
+
+Number of datapoints: 60000
+
+Root location: data
+
+Split: Train
+
+Standard Transform
+
+Transform: To Tensor()
+
+There are 60,000 images in the training data and 10,000 in the test data.
+
+The images are 28 28, and stored as a matrix of pixels. We need to
+
+× transform each one into a vector.
+
+Neural networks are somewhat sensitive to the scale of the inputs, much as ridge and lasso regularization are affected by scaling. Here the inputs are eight-bit grayscale values between 0 and 255, so we rescale to the unit interval.26 This transformation, along with some reordering of the axes, is performed by the To Tensor() transform from the torchvision.transforms package.
+
+Asinour Hittersexample,weformadatamodulefromthetrainingand test datasets, setting aside 20% of the training images for validation.
+
+In[34]: mnist_dm = Simple Data Module(mnist_train, mnist_test, validation=0.2, num_workers=max_num_workers, batch_size=256)
+
+26Note: eight bits means 28, which equals 256. Since the convention is to start at 0, thepossiblevaluesrangefrom 0 to 255.
+
+10.9 Lab: Deep Learning 445
+
+Let’s take a look at the data that will get fed into our network. We loop through the first few chunks of the test dataset, breaking after 2 batches:
+
+In[35]: for idx, (X_ ,Y_) in enumerate(mnist_dm.train_dataloader()): print('X: ', X_.shape) print('Y: ', Y_.shape) if idx >= 1: break
+
+X: torch.Size([256, 1, 28, 28])
+
+Y: torch.Size([256])
+
+X: torch.Size([256, 1, 28, 28])
+
+Y: torch.Size([256])
+
+We see that the X for each batch consists of 256 images of size 1 x 28 x 28.
+
+Here the 1 indicates a single channel (greyscale). For RGB images such as
+
+CIFAR100 below, we will see that the 1 in the size will be replaced by 3 for the three RGB channels.
+
+Now we are ready to specify our neural network.
+
+In[36]: class MNISTModel(nn.Module): def __init__(self): super(MNISTModel, self).__init__() self.layer 1 = nn.Sequential( nn.Flatten(), nn.Linear(28*28, 256), nn.Re LU(), nn.Dropout(0.4)) self.layer 2 = nn.Sequential( nn.Linear(256, 128), nn.Re LU(), nn.Dropout(0.3)) self._forward = nn.Sequential( self.layer 1, self.layer 2, nn.Linear(128, 10)) def forward(self, x): return self._forward(x)
+
+We see that in the first layer, each 1 x 28 x 28 image is flattened, then mapped to 256 dimensions where we apply a Re LU activation with 40% dropout. A second layer maps the first layer’s output down to 128 di- mensions, applying a Re LU activation with 30% dropout. Finally, the 128 dimensions are mapped down to 10, the number of classes in the MNIST data.
+
+In[37]: mnist_model = MNISTModel()
+
+We can check that the model produces output of expected size based on our existing batch X_ above.
+
+In[38]: mnist_model(X_).size()
+
+Out[38]:torch.Size([256, 10])
+
+Let’stakealookatthesummaryofthemodel.Insteadofaninput_size we can pass a tensor of correct shape. In this case, we pass through the final batched X_ from above.
+
+446 10. Deep Learning
+
+In[39]: summary(mnist_model, input_data=X_, col_names=['input_size',
+
+'output_size',
+
+'num_params'])
+
+Out[39]:=====================================================================
+
+Layer (type:depth-idx) Input Shape Output Shape Param #
+
+=====================================================================
+
+MNISTModel [256, 1, 28, 28] [256, 10] --
+
+Sequential: 1-1 [256, 1, 28, 28] [256, 10] --
+
+Sequential: 2-1 [256, 1, 28, 28] [256, 256] --
+
+Flatten: 3-1 [256, 1, 28, 28] [256, 784] --
+
+Linear: 3-2 [256, 784] [256, 256] 200,960
+
+Re LU: 3-3 [256, 256] [256, 256] --
+
+Dropout: 3-4 [256, 256] [256, 256] --
+
+Sequential: 2-2 [256, 256] [256, 128] --
+
+Linear: 3-5 [256, 256] [256, 128] 32,896
+
+Re LU: 3-6 [256, 128] [256, 128] --
+
+Dropout: 3-7 [256, 128] [256, 128] --
+
+Linear: 2-3 [256, 128] [256, 10] 1,290
+
+=====================================================================
+
+Total params: 235,146
+
+Trainable params: 235,146
+
+Havingsetupboththemodelandthedatamodule,fittingthismodelis now almost identical to the Hitters example. In contrast to our regression model, here we will use the Simple Module.classification() method which
+
+Simple Module.
+
+uses the cross-entropy loss function instead of mean squared error.
+
+classifi- cation()
+
+In[40]: mnist_module = Simple Module.classification(mnist_model) mnist_logger = CSVLogger('logs', name='MNIST')
+
+Now we are ready to go. The final step is to supply training data, and fit the model.
+
+In[41]: mnist_trainer = Trainer(deterministic=True, max_epochs=30, logger=mnist_logger, callbacks=[Error Tracker()]) mnist_trainer.fit(mnist_module, datamodule=mnist_dm)
+
+We have suppressed the output here, which is a progress report on the fitting of the model, grouped by epoch. This is very useful, since on large datasets fitting can take time. Fitting this model took 245 seconds on a
+
+Mac Book Pro with an Apple M1 Pro chip with 10 cores and 16 GB of
+
+RAM. Here we specified a validation split of 20%, so training is actually performedon 80%ofthe 60,000 observationsinthetrainingset.Thisisan alternativetoactuallysupplyingvalidationdata,likewedidforthe Hitters data.SGDusesbatchesof 256 observationsincomputingthegradient,and doing the arithmetic, we see that an epoch corresponds to 188 gradient steps.
+
+Simple Module.classification() includes an accuracy metric by default.
+
+Other classification metrics can be added from torchmetrics. We will use our summary_plot() function to display accuracy across epochs.
+
+10.9 Lab: Deep Learning 447
+
+In[42]: mnist_results = pd.read_csv(mnist_logger.experiment.
+
+metrics_file_path) fig, ax = subplots(1, 1, figsize=(6, 6)) summary_plot(mnist_results, ax, col='accuracy', ylabel='Accuracy') ax.set_ylim([0.5, 1]) ax.set_ylabel('Accuracy') ax.set_xticks(np.linspace(0, 30, 7).astype(int));
+
+Once again we evaluate the accuracy using the test() method of our trainer. This model achieves 97% accuracy on the test data.
+
+In[43]: mnist_trainer.test(mnist_module, datamodule=mnist_dm)
+
+Out[43]:[{'test_loss': 0.1471, 'test_accuracy': 0.9681}]
+
+Table 10.1 alsoreportstheerrorratesresultingfrom LDA(Chapter 4)and multiclasslogisticregression.For LDAwereferthereaderto Section 4.7.3.
+
+Although we could use the sklearn function Logistic Regression() to fit multiclass logistic regression, we are set up here to fit such a model with torch.Wejusthaveaninputlayerandanoutputlayer,andomitthehidden layers!
+
+In[44]: class MNIST_MLR(nn.Module): def __init__(self): super(MNIST_MLR, self).__init__() self.linear = nn.Sequential(nn.Flatten(), nn.Linear(784, 10)) def forward(self, x): return self.linear(x) mlr_model = MNIST_MLR() mlr_module = Simple Module.classification(mlr_model) mlr_logger = CSVLogger('logs', name='MNIST_MLR')
+
+In[45]: mlr_trainer = Trainer(deterministic=True, max_epochs=30, callbacks=[Error Tracker()]) mlr_trainer.fit(mlr_module, datamodule=mnist_dm)
+
+We fit the model just as before and compute the test results.
+
+In[46]: mlr_trainer.test(mlr_module, datamodule=mnist_dm)
+
+Out[46]:[{'test_loss': 0.3187, 'test_accuracy': 0.9241}]
+
+The accuracy is above 90% even for this pretty simple model.
+
+As in the Hitters example, we delete some of the objects we created above.
+
+In[47]: del(mnist_test, mnist_train,
+
+448 10. Deep Learning mnist_model, mnist_dm, mnist_trainer, mnist_module, mnist_results, mlr_model, mlr_module, mlr_trainer)
+
+10.9.3 Convolutional Neural Networks
+
+In this section we fit a CNN to the CIFAR100 data, which is available in the torchvision package. It is arranged in a similar fashion as the MNIST data.
+
+In[48]: (cifar_train, cifar_test) = [CIFAR100(root="data", train=train, download=True) for train in [True, False]]
+
+In[49]: transform = To Tensor() cifar_train_X = torch.stack([transform(x) for x in cifar_train.data]) cifar_test_X = torch.stack([transform(x) for x in cifar_test.data]) cifar_train = Tensor Dataset(cifar_train_X, torch.tensor(cifar_train.targets)) cifar_test = Tensor Dataset(cifar_test_X, torch.tensor(cifar_test.targets))
+
+The CIFAR100 datasetconsistsof 50,000 trainingimages,eachrepresented by a three-dimensional tensor: each three-color image is represented as a set of three channels, each of which consists of 32 32 eight-bit pixels. We
+
+× standardize as we did for the digits, but keep the array structure. This is accomplished with the To Tensor() transform.
+
+Creating the data module is similar to the MNIST example.
+
+In[50]: cifar_dm = Simple Data Module(cifar_train, cifar_test, validation=0.2, num_workers=max_num_workers, batch_size=128)
+
+We again look at the shape of typical batches in our data loaders.
+
+In[51]: for idx, (X_ ,Y_) in enumerate(cifar_dm.train_dataloader()): print('X: ', X_.shape) print('Y: ', Y_.shape) if idx >= 1: break
+
+X: torch.Size([128, 3, 32, 32])
+
+Y: torch.Size([128])
+
+X: torch.Size([128, 3, 32, 32])
+
+Y: torch.Size([128])
+
+10.9 Lab: Deep Learning 449
+
+Before we start, we look at some of the training images; similar code produced Figure 10.5 on page 406. The example belowalso illustrates that
+
+Tensor Datasetobjectscanbeindexedwithintegers—wearechoosingran- domimagesfromthetrainingdatabyindexingcifar_train.Inordertodis- playcorrectly,wemustreorderthedimensionsbyacalltonp.transpose().
+
+In[52]: fig, axes = subplots(5, 5, figsize=(10,10)) rng = np.random.default_rng(4) indices = rng.choice(np.arange(len(cifar_train)), 25, replace=False).reshape((5,5)) for i in range(5): for j in range(5): idx = indices[i,j] axes[i,j].imshow(np.transpose(cifar_train[idx][0],
+
+[1,2,0]), interpolation=None) axes[i,j].set_xticks([]) axes[i,j].set_yticks([])
+
+Here the imshow() method recognizes from the shape of its argument that
+
+.imshow() itisa 3-dimensionalarray,withthelastdimensionindexingthethree RGB color channels.
+
+We specify a moderately-sized CNN for demonstration purposes, simi- lar in structure to Figure 10.8. We use several layers, each consisting of convolution, Re LU, and max-pooling steps. We first define a module that defines one of these layers. As in our previous examples, we overwrite the
+
+__init__()andforward()methodsofnn.Module.Thisuser-definedmodule can now be used in ways just like nn.Linear() or nn.Dropout().
+
+In[53]: class Building Block(nn.Module): def __init__(self, in_channels, out_channels): super(Building Block, self).__init__() self.conv = nn.Conv 2 d(in_channels=in_channels, out_channels=out_channels, kernel_size=(3,3), padding='same') self.activation = nn.Re LU() self.pool = nn.Max Pool 2 d(kernel_size=(2,2)) def forward(self, x): return self.pool(self.activation(self.conv(x)))
+
+Notice that we used the padding = "same" argument to nn.Conv 2 d(), which ensures that the output channels have the same dimension as the input channels. There are 32 channels in the first hidden layer, in contrast to the three channels in the input layer. We use a 3 3 convolution fil-
+
+× ter for each channel in all the layers. Each convolution is followed by a max-pooling layer over 2 2 blocks.
+
+×
+
+Informingourdeeplearningmodelforthe CIFAR100 data,weuseseveral of our Building Block() modules sequentially. This simple example illus- trates some of the power of torch. Users can define modules of their own,
+
+450 10. Deep Learning which can be combined in other modules. Ultimately, everything is fit by a generic trainer.
+
+In[54]: class CIFARModel(nn.Module): def __init__(self): super(CIFARModel, self).__init__() sizes = [(3,32),
+
+(32,64),
+
+(64,128),
+
+(128,256)] self.conv = nn.Sequential(*[Building Block(in_, out_) for in_, out_ in sizes]) self.output = nn.Sequential(nn.Dropout(0.5), nn.Linear(2*2*256, 512), nn.Re LU(), nn.Linear(512, 100)) def forward(self, x): val = self.conv(x) val = torch.flatten(val, start_dim=1) return self.output(val)
+
+Webuildthemodelandlookatthesummary.(Wehadcreatedexamples of X_ earlier.)
+
+In[55]: cifar_model = CIFARModel() summary(cifar_model, input_data=X_, col_names=['input_size',
+
+'output_size',
+
+'num_params'])
+
+Out[55]:======================================================================
+
+Layer (type:depth-idx) Input Shape Output Shape Param #
+
+======================================================================
+
+CIFARModel [128, 3, 32, 32] [128, 100] --
+
+Sequential: 1-1 [128, 3, 32, 32] [128, 256, 2, 2] --
+
+Building Block: 2-1 [128, 3, 32, 32] [128, 32, 16, 16] --
+
+Conv 2 d: 3-1 [128, 3, 32, 32] [128, 32, 32, 32] 896
+
+Re LU: 3-2 [128, 32, 32, 32] [128, 32, 32, 32] --
+
+Max Pool 2 d: 3-3 [128, 32, 32, 32] [128, 32, 16, 16] --
+
+Building Block: 2-2 [128, 32, 16, 16] [128, 64, 8, 8] --
+
+Conv 2 d: 3-4 [128, 32, 16, 16] [128, 64, 16, 16] 18,496
+
+Re LU: 3-5 [128, 64, 16, 16] [128, 64, 16, 16] --
+
+Max Pool 2 d: 3-6 [128, 64, 16, 16] [128, 64, 8, 8] --
+
+Building Block: 2-3 [128, 64, 8, 8] [128, 128, 4, 4] --
+
+Conv 2 d: 3-7 [128, 64, 8, 8] [128, 128, 8, 8] 73,856
+
+Re LU: 3-8 [128, 128, 8, 8] [128, 128, 8, 8] --
+
+Max Pool 2 d: 3-9 [128, 128, 8, 8] [128, 128, 4, 4] --
+
+Building Block: 2-4 [128, 128, 4, 4] [128, 256, 2, 2] --
+
+Conv 2 d: 3-10 [128, 128, 4, 4] [128, 256, 4, 4] 295,168
+
+Re LU: 3-11 [128, 256, 4, 4] [128, 256, 4, 4] --
+
+Max Pool 2 d: 3-12 [128, 256, 4, 4] [128, 256, 2, 2] --
+
+Sequential: 1-2 [128, 1024] [128, 100] --
+
+Dropout: 2-5 [128, 1024] [128, 1024] --
+
+Linear: 2-6 [128, 1024] [128, 512] 524,800
+
+10.9 Lab: Deep Learning 451
+
+Re LU: 2-7 [128, 512] [128, 512] --
+
+Linear: 2-8 [128, 512] [128, 100] 51,300
+
+======================================================================
+
+Total params: 964,516
+
+Trainable params: 964,516
+
+The total number of trainable parameters is 964,516. By studying the size of the parameters, we can see that the channels halve in both dimensions after each of these max-pooling operations. After the last of these we have a layer with 256 channels of dimension 2 2. These are then flattened to
+
+× a dense layer of size 1,024; in other words, each of the 2 2 matrices is
+
+× turned into a 4-vector, and put side-by-side in one layer. This is followed byadropoutregularizationlayer,thenanotherdenselayerofsize 512,and finally, the output layer.
+
+Uptonow,wehavebeenusingadefaultoptimizerin Simple Module().For these data, experiments show that a smaller learning rate performs better thanthedefault 0.01.Weuseacustomoptimizerherewithalearningrate of 0.001. Besides this, the logging and training follow a similar pattern to our previous examples. The optimizer takes an argument params that informs the optimizer which parameters are involved in SGD (stochastic gradient descent).
+
+We saw earlier that entries of a module’s parameters are tensors. In passing the parameters to the optimizer we are doing more than simply passing arrays; part of the structure of the graph is encoded in the tensors themselves.
+
+In[56]: cifar_optimizer = RMSprop(cifar_model.parameters(), lr=0.001) cifar_module = Simple Module.classification(cifar_model, optimizer=cifar_optimizer) cifar_logger = CSVLogger('logs', name='CIFAR100')
+
+In[57]: cifar_trainer = Trainer(deterministic=True, max_epochs=30, logger=cifar_logger, callbacks=[Error Tracker()]) cifar_trainer.fit(cifar_module, datamodule=cifar_dm)
+
+This model takes 10 minutes or more to run and achieves about 42% accuracy on the test data. Although this is not terrible for 100-class data
+
+(a random classifier gets 1% accuracy), searching the web we see results around 75%.Typicallyittakesalotofarchitecturecarpentry,fiddlingwith regularization, and time, to achieve such results.
+
+Let’s take a look at the validation and training accuracy across epochs.
+
+In[58]: log_path = cifar_logger.experiment.metrics_file_path cifar_results = pd.read_csv(log_path) fig, ax = subplots(1, 1, figsize=(6, 6)) summary_plot(cifar_results, ax, col='accuracy', ylabel='Accuracy') ax.set_xticks(np.linspace(0, 10, 6).astype(int)) ax.set_ylabel('Accuracy') ax.set_ylim([0, 1]);
+
+452 10. Deep Learning
+
+Finally, we evaluate our model on our test data.
+
+In[59]: cifar_trainer.test(cifar_module, datamodule=cifar_dm)
+
+Out[59]:[{'test_loss': 2.4238 'test_accuracy': 0.4206}]
+
+Hardware Acceleration
+
+As deep learning has become ubiquitous in machine learning, hardware manufacturers have produced special libraries that can often speed up the gradient-descent steps.
+
+Forinstance,Mac OSdeviceswiththe M1 chipmayhavethe Metal pro- grammingframeworkenabled,whichcanspeedupthetorchcomputations.
+
+We present an example of how to use this acceleration.
+
+Themainchangesaretothe Trainer()callaswellastothemetricsthat will be evaluated on the data. These metrics must be told where the data will be located at evaluation time. This is accomplished with a call to the to() method of the metrics.
+
+In[60]: try: for name, metric in cifar_module.metrics.items(): cifar_module.metrics[name] = metric.to('mps') cifar_trainer_mps = Trainer(accelerator='mps', deterministic=True, max_epochs=30) cifar_trainer_mps.fit(cifar_module, datamodule=cifar_dm) cifar_trainer_mps.test(cifar_module, datamodule=cifar_dm) except: pass
+
+This yields approximately two- or three-fold acceleration for each epoch.
+
+We have protected this code block using try: and except: clauses; if it works, we get the speedup, if it fails, nothing happens.
+
+10.9.4 Using Pretrained CNN Models
+
+We now show how to use a CNN pretrained on the imagenet database to classify natural images, and demonstrate how we produced Figure 10.10.
+
+We copied six JPEG images from a digital photo album into the direc- torybook_images.Theseimagesareavailablefromthedatasectionofwww.
+
+statlearning.com, the ISLP book website. Download book_images.zip; when clicked it creates the book_images directory.
+
+The pretrained network we use is called resnet 50; specification details canbefoundontheweb.Wewillreadintheimages,andconverttheminto thearrayformatexpectedbythetorchsoftwaretomatchthespecifications in resnet 50. The conversion involves a resize, a crop and then a predefined standardization for each of the three channels. We now read in the images and preprocess them.
+
+10.9 Lab: Deep Learning 453
+
+In[61]: resize = Resize((232,232)) crop = Center Crop(224) normalize = Normalize([0.485,0.456,0.406],
+
+[0.229,0.224,0.225]) imgfiles = sorted([f for f in glob('book_images/*')]) imgs = torch.stack([torch.div(crop(resize(read_image(f))), 255) for f in imgfiles]) imgs = normalize(imgs) imgs.size()
+
+Out[61]:torch.Size([6, 3, 224, 224])
+
+We now set up the trained network with the weights we read in code block 6. The model has 50 layers, with a fair bit of complexity.
+
+In[62]: resnet_model = resnet 50(weights=Res Net 50_Weights.DEFAULT) summary(resnet_model, input_data=imgs, col_names=['input_size',
+
+'output_size',
+
+'num_params'])
+
+We set the mode to eval() to ensure that the model is ready to predict on new data.
+
+In[63]: resnet_model.eval()
+
+Inspectingtheoutputabove,weseethatwhensettinguptheresnet_model, the authors defined a Bottleneck, much like our Building Block module.
+
+We now feed our six images through the fitted network.
+
+In[64]: img_preds = resnet_model(imgs)
+
+Let’s look at the predicted probabilities for each of the top 3 choices.
+
+First we compute the probabilities by applying the softmax to the logits in img_preds. Note that we have had to call the detach() method on the tensor img_preds in order to convert it to our a more familiar ndarray.
+
+In[65]: img_probs = np.exp(np.asarray(img_preds.detach())) img_probs /= img_probs.sum(1)[:,None]
+
+Inordertoseetheclasslabels,wemustdownloadtheindexfileassociated with imagenet.27
+
+In[66]: labs = json.load(open('imagenet_class_index.json')) class_labels = pd.Data Frame([(int(k), v[1]) for k, v in labs.items()], columns=['idx', 'label']) class_labels = class_labels.set_index('idx') class_labels = class_labels.sort_index()
+
+We’llnowconstructadataframeforeachimagefilewiththelabelswith the three highest probabilities as estimated by the model above.
+
+27This is avalable from the book website and s 3.amazonaws.com/deep-learning- models/image-models/imagenet_class_index.json.
+
+454 10. Deep Learning
+
+In[67]: for i, imgfile in enumerate(imgfiles): img_df = class_labels.copy() img_df['prob'] = img_probs[i] img_df = img_df.sort_values(by='prob', ascending=False)[:3] print(f'Image: {imgfile}') print(img_df.reset_index().drop(columns=['idx']))
+
+Image: book_images/Cape_Weaver.jpg label prob
+
+0 jacamar 0.287283
+
+1 bee_eater 0.046768
+
+2 bulbul 0.037507
+
+Image: book_images/Flamingo.jpg label prob
+
+0 flamingo 0.591761
+
+1 spoonbill 0.012386
+
+2 American_egret 0.002105
+
+Image: book_images/Hawk_Fountain.jpg label prob
+
+0 great_grey_owl 0.287959
+
+1 kite 0.039478
+
+2 fountain 0.029384
+
+Image: book_images/Hawk_cropped.jpg label prob
+
+0 kite 0.301830
+
+1 jay 0.121674
+
+2 magpie 0.015513
+
+Image: book_images/Lhasa_Apso.jpg label prob
+
+0 Lhasa 0.151143
+
+1 Shih-Tzu 0.129850
+
+2 Tibetan_terrier 0.102358
+
+Image: book_images/Sleeping_Cat.jpg label prob
+
+0 tabby 0.173627
+
+1 tiger_cat 0.110414
+
+2 doormat 0.093447
+
+Weseethatthemodelisquiteconfidentabout Flamingo.jpg,butalittle less so for the other images.
+
+We end this section with our usual cleanup.
+
+In[68]: del(cifar_test, cifar_train, cifar_dm, cifar_module, cifar_logger, cifar_optimizer, cifar_trainer)
+
+10.9.5 IMDB Document Classification
+
+We now implement models for sentiment classification (Section 10.4) on the IMDB dataset. As mentioned above code block 8, we are using a prepro- cessedversionofthe IMDBdatasetfoundinthekeraspackage.Askerasuses
+
+10.9 Lab: Deep Learning 455 tensorflow, a different tensor and deep learning library, we have converted the data to be suitable for torch. The code used to convert from keras is available in the module ISLP.torch._make_imdb. It requires some of the keras packages to run. These data use a dictionary of size 10,000.
+
+Wehavestoredthreedifferentrepresentationsofthereviewdataforthis lab:
+
+• load_tensor(), a sparse tensor version usable by torch;
+
+• load_sparse(), a sparse matrix version usable by sklearn, since we will compare with a lasso fit;
+
+• load_sequential(), a padded version of the original sequence repre- sentation, limited to the last 500 words of each review.
+
+In[69]: (imdb_seq_train, imdb_seq_test) = load_sequential(root='data/IMDB') padded_sample = np.asarray(imdb_seq_train.tensors[0][0]) sample_review = padded_sample[padded_sample > 0][:12] sample_review[:12]
+
+Out[69]:array([ 1, 14, 22, 16, 43, 530, 973, 1622, 1385,
+
+65, 458, 4468], dtype=int 32)
+
+The datasets imdb_seq_train and imdb_seq_test are both instances of the class Tensor Dataset. The tensors used to construct them can be found in the tensors attribute, with the first tensor the features X and the second the outcome Y. We have taken the first row of features and stored it as padded_sample. In the preprocessing used to form these data, sequences were padded with 0 s in the beginning if they were not long enough, hence we remove this padding by restricting to entries where padded_sample > 0.
+
+We then provide the first 12 words of the sample review.
+
+Wecanfindthesewordsinthelookupdictionaryfromthe ISLP.torch.imdb module.
+
+In[70]: lookup = load_lookup(root='data/IMDB')
+
+' '.join(lookup[i] for i in sample_review)
+
+Out[70]:"<START> this film was just brilliant casting location scenery story direction everyone's"
+
+For our first model, we have created a binary feature for each of the
+
+10,000 possible words in the dataset, with an entry of one in the i,j entry ifwordjappearsinreviewi.Asmostreviewsarequiteshort,suchafeature matrix has over 98% zeros. These data are accessed using load_tensor() from the ISLP library.
+
+In[71]: max_num_workers=10
+
+(imdb_train, imdb_test) = load_tensor(root='data/IMDB') imdb_dm = Simple Data Module(imdb_train, imdb_test, validation=2000, num_workers=min(6, max_num_workers), batch_size=512)
+
+456 10. Deep Learning
+
+We’ll use a two-layer model for our first model.
+
+In[72]: class IMDBModel(nn.Module): def __init__(self, input_size): super(IMDBModel, self).__init__() self.dense 1 = nn.Linear(input_size, 16) self.activation = nn.Re LU() self.dense 2 = nn.Linear(16, 16) self.output = nn.Linear(16, 1) def forward(self, x): val = x for _map in [self.dense 1, self.activation, self.dense 2, self.activation, self.output]: val = _map(val) return torch.flatten(val)
+
+We now instantiate our model and look at a summary (not shown).
+
+In[73]: imdb_model = IMDBModel(imdb_test.tensors[0].size()[1]) summary(imdb_model, input_size=imdb_test.tensors[0].size(), col_names=['input_size',
+
+'output_size',
+
+'num_params'])
+
+We’ll again use a smaller learning rate for these data, hence we pass an optimizertothe Simple Module.Sincethereviewsareclassifiedintopositive or negative sentiment, we use Simple Module.binary_classification().28
+
+In[74]: imdb_optimizer = RMSprop(imdb_model.parameters(), lr=0.001) imdb_module = Simple Module.binary_classification( imdb_model, optimizer=imdb_optimizer)
+
+Havingloadedthedatasetsintoadatamoduleandcreateda Simple Module, the remaining steps are familiar.
+
+In[75]: imdb_logger = CSVLogger('logs', name='IMDB') imdb_trainer = Trainer(deterministic=True, max_epochs=30, logger=imdb_logger, callbacks=[Error Tracker()]) imdb_trainer.fit(imdb_module, datamodule=imdb_dm)
+
+Evaluating the test error yields roughly 86% accuracy.
+
+In[76]: test_results = imdb_trainer.test(imdb_module, datamodule=imdb_dm) test_results
+
+28Our use of binary_classification() instead of classification() is due to some subtlety in how torchmetrics.Accuracy() works, as well as the data type of thetargets.
+
+10.9 Lab: Deep Learning 457
+
+Out[76]:[{'test_loss': 1.0863, 'test_accuracy': 0.8550}]
+
+Comparison to Lasso
+
+We now fit a lasso logistic regression model using Logistic Regression() fromsklearn.Sincesklearndoesnotrecognizethesparsetensorsoftorch, we use a sparse matrix that is recognized by sklearn.
+
+In[77]: ((X_train, Y_train),
+
+(X_valid, Y_valid),
+
+(X_test, Y_test)) = load_sparse(validation=2000, random_state=0, root='data/IMDB')
+
+Similar to what we did in Section 10.9.1, we construct a series of 50 values for the lasso reguralization parameter λ.
+
+In[78]: lam_max = np.abs(X_train.T * (Y_train - Y_train.mean())).max() lam_val = lam_max * np.exp(np.linspace(np.log(1), np.log(1 e-4), 50))
+
+With Logistic Regression() the regularization parameter C is specified as the inverse of λ. There are several solvers for logistic regression; here we use liblinear which works well with the sparse input format.
+
+In[79]: logit = Logistic Regression(penalty='l 1',
+
+C=1/lam_max, solver='liblinear', warm_start=True, fit_intercept=True)
+
+The path of 50 values takes approximately 40 seconds to run.
+
+In[80]: coefs = [] intercepts = [] for l in lam_val: logit.C = 1/l logit.fit(X_train, Y_train) coefs.append(logit.coef_.copy()) intercepts.append(logit.intercept_)
+
+The coefficient and intercepts have an extraneous dimension which can be removed by the np.squeeze() function.
+
+In[81]: coefs = np.squeeze(coefs) intercepts = np.squeeze(intercepts)
+
+We’ll now make a plot to compare our neural network results with the lasso.
+
+In[82]: %%capture fig, axes = subplots(1, 2, figsize=(16, 8), sharey=True) for ((X_, Y_), data_, color) in zip([(X_train, Y_train),
+
+(X_valid, Y_valid),
+
+(X_test, Y_test)],
+
+458 10. Deep Learning
+
+['Training', 'Validation', 'Test'],
+
+['black', 'red', 'blue']): linpred_ = X_ * coefs.T + intercepts[None,:] label_ = np.array(linpred_ > 0) accuracy_ = np.array([np.mean(Y_ == l) for l in label_.T]) axes[0].plot(-np.log(lam_val / X_train.shape[0]), accuracy_,
+
+'.--', color=color, markersize=13, linewidth=2, label=data_) axes[0].legend() axes[0].set_xlabel(r'$-\log(\lambda)$', fontsize=20) axes[0].set_ylabel('Accuracy', fontsize=20)
+
+Noticetheuseof%%capture,whichsuppressesthedisplayingofthepartially
+
+%%capture completed figure. This is useful when making a complex figure, since the stepscanbespreadacrosstwoormorecells.Wenowaddaplotofthelasso accuracy, and display the composed figure by simply entering its name at the end of the cell.
+
+In[83]: imdb_results = pd.read_csv(imdb_logger.experiment.metrics_file_path) summary_plot(imdb_results, axes[1], col='accuracy', ylabel='Accuracy') axes[1].set_xticks(np.linspace(0, 30, 7).astype(int)) axes[1].set_ylabel('Accuracy', fontsize=20) axes[1].set_xlabel('Epoch', fontsize=20) axes[1].set_ylim([0.5, 1]); axes[1].axhline(test_results[0]['test_accuracy'], color='blue', linestyle='--', linewidth=3) fig
+
+From the graphs we see that the accuracy of the lasso logistic regression peaks at about 0.88, as it does for the neural network.
+
+Once again, we end with a cleanup.
+
+In[84]: del(imdb_model, imdb_trainer, imdb_logger, imdb_dm, imdb_train, imdb_test)
+
+10.9.6 Recurrent Neural Networks
+
+In this lab we fit the models illustrated in Section 10.5.
+
+Sequential Models for Document Classification
+
+Here we fit a simple LSTM RNN for sentiment prediction to the IMDb movie-review data, as discussed in Section 10.5.1. For an RNN we use
+
+10.9 Lab: Deep Learning 459 the sequence of words in a document, taking their order into account. We loaded the preprocessed data at the beginning of Section 10.9.5. A script that details the preprocessing can be found in the ISLP library. Notably, since more than 90% of the documents had fewer than 500 words, we set the document length to 500. For longer documents, we used the last 500 words, and for shorter documents, we padded the front with blanks.
+
+In[85]: imdb_seq_dm = Simple Data Module(imdb_seq_train, imdb_seq_test, validation=2000, batch_size=300, num_workers=min(6, max_num_workers)
+
+)
+
+The first layer of the RNN is an embedding layer of size 32, which will be learned during training. This layer one-hot encodes each document as a matrixofdimension 500 10,003,andthenmapsthese 10,003 dimensions
+
+× downto 32.29Sinceeachwordisrepresentedbyaninteger,thisiseffectively achieved by the creation of an embedding matrix of size 10,003 32; each
+
+× of the 500 integers in the document are then mapped to the appropriate
+
+32 real numbers by indexing the appropriate rows of this matrix.
+
+The second layer is an LSTM with 32 units, and the output layer is a singlelogitforthebinaryclassificationtask.Inthelastlineoftheforward() method below, we take the last 32-dimensional output of the LSTM and map it to our response.
+
+In[86]: class LSTMModel(nn.Module): def __init__(self, input_size): super(LSTMModel, self).__init__() self.embedding = nn.Embedding(input_size, 32) self.lstm = nn.LSTM(input_size=32, hidden_size=32, batch_first=True) self.dense = nn.Linear(32, 1) def forward(self, x): val, (h_n, c_n) = self.lstm(self.embedding(x)) return torch.flatten(self.dense(val[:,-1]))
+
+We instantiate and take a look at the summary of the model, using the first 10 documents in the corpus.
+
+In[87]: lstm_model = LSTMModel(X_test.shape[-1]) summary(lstm_model, input_data=imdb_seq_train.tensors[0][:10], col_names=['input_size',
+
+'output_size',
+
+'num_params'])
+
+Out[87]:====================================================================
+
+Layer (type:depth-idx) Input Shape Output Shape Param #
+
+====================================================================
+
+LSTMModel [10, 500] [10] --
+
+29Theextra 3 dimensionscorrespondtocommonlyoccurringnon-wordentriesinthe reviews.
+
+460 10. Deep Learning
+
+Embedding: 1-1 [10, 500] [10, 500, 32] 320,096
+
+LSTM: 1-2 [10, 500, 32] [10, 500, 32] 8,448
+
+Linear: 1-3 [10, 32] [10, 1] 33
+
+====================================================================
+
+Total params: 328,577
+
+Trainable params: 328,577
+
+The 10,003 is suppressed in the summary, but we see it in the parameter count, since 10,003 32=320,096.
+
+×
+
+In[88]: lstm_module = Simple Module.binary_classification(lstm_model) lstm_logger = CSVLogger('logs', name='IMDB_LSTM')
+
+In[89]: lstm_trainer = Trainer(deterministic=True, max_epochs=20, logger=lstm_logger, callbacks=[Error Tracker()]) lstm_trainer.fit(lstm_module, datamodule=imdb_seq_dm)
+
+The rest is now similar to other networks we have fit. We track the test performance as the network is fit, and see that it attains 85% accuracy.
+
+In[90]: lstm_trainer.test(lstm_module, datamodule=imdb_seq_dm)
+
+Out[90]:[{'test_loss': 0.8178, 'test_accuracy': 0.8476}]
+
+We once again show the learning progress, followed by cleanup.
+
+In[91]: lstm_results = pd.read_csv(lstm_logger.experiment.metrics_file_path) fig, ax = subplots(1, 1, figsize=(6, 6)) summary_plot(lstm_results, ax, col='accuracy', ylabel='Accuracy') ax.set_xticks(np.linspace(0, 20, 5).astype(int)) ax.set_ylabel('Accuracy') ax.set_ylim([0.5, 1])
+
+In[92]: del(lstm_model, lstm_trainer, lstm_logger, imdb_seq_dm, imdb_seq_train, imdb_seq_test)
+
+Time Series Prediction
+
+We now show how to fit the models in Section 10.5.2 for time series pre- diction. We first load and standardize the data.
+
+In[93]: NYSE = load_data('NYSE') cols = ['DJ_return', 'log_volume', 'log_volatility']
+
+X = pd.Data Frame(Standard Scaler( with_mean=True, with_std=True).fit_transform(NYSE[cols]), columns=NYSE[cols].columns, index=NYSE.index)
+
+10.9 Lab: Deep Learning 461
+
+Next we set up the lagged versions of the data, dropping any rows with missing values using the dropna() method.
+
+In[94]: for lag in range(1, 6): for col in cols: newcol = np.zeros(X.shape[0]) * np.nan newcol[lag:] = X[col].values[:-lag]
+
+X.insert(len(X.columns), "{0}_{1}".format(col, lag), newcol)
+
+X.insert(len(X.columns), 'train', NYSE['train'])
+
+X = X.dropna()
+
+Finally,weextracttheresponse,trainingindicator,anddropthecurrent day’s DJ_return and log_volatility to predict only from previous day’s data.
+
+In[95]: Y, train = X['log_volume'], X['train']
+
+X = X.drop(columns=['train'] + cols)
+
+X.columns
+
+Out[95]:Index(['DJ_return_1', 'log_volume_1', 'log_volatility_1',
+
+'DJ_return_2', 'log_volume_2', 'log_volatility_2',
+
+'DJ_return_3', 'log_volume_3', 'log_volatility_3',
+
+'DJ_return_4', 'log_volume_4', 'log_volatility_4',
+
+'DJ_return_5', 'log_volume_5', 'log_volatility_5'], dtype='object')
+
+We first fit a simple linear model and compute the R2 on the test data using the score() method.
+
+In[96]: M = Linear Regression()
+
+M.fit(X[train], Y[train])
+
+M.score(X[ train], Y[ train])
+
+∼ ∼
+
+Out[96]:0.4129
+
+Werefitthismodel,includingthefactorvariableday_of_week.Foracate- goricalseriesinpandas,wecanformtheindicatorsusingtheget_dummies() method.
+
+In[97]: X_day = pd.merge(X, pd.get_dummies(NYSE['day_of_week']), on='date')
+
+Notethatwedonothavetoreinstantiatethelinearregressionmodelasits fit() method accepts a design matrix and a response directly.
+
+In[98]: M.fit(X_day[train], Y[train])
+
+M.score(X_day[ train], Y[ train])
+
+∼ ∼
+
+Out[98]:0.4595
+
+This model achieves an R2 of about 46%.
+
+To fit the RNN, we must reshape the data, as it will expect 5 lagged versions of each feature as indicated by the input_shape argument to the layer nn.RNN() below. We first ensure the columns of our data frame are such that a reshaped matrix will have the variables correctly lagged. We use the reindex() method to do this.
+
+462 10. Deep Learning
+
+For an input shape (5,3), each row represents a lagged version of the threevariables.Thenn.RNN()layeralsoexpectsthefirstrowofeachobser- vation to be earliest in time, so we must reverse the current order. Hence we loop over range(5,0,-1) below, which is an example of using a slice() to index iterable objects. The general notation is start:end:step.
+
+In[99]: ordered_cols = [] for lag in range(5,0,-1): for col in cols: ordered_cols.append('{0}_{1}'.format(col, lag))
+
+X = X.reindex(columns=ordered_cols)
+
+X.columns
+
+Out[99]:Index(['DJ_return_5', 'log_volume_5', 'log_volatility_5',
+
+'DJ_return_4', 'log_volume_4', 'log_volatility_4',
+
+'DJ_return_3', 'log_volume_3', 'log_volatility_3',
+
+'DJ_return_2', 'log_volume_2', 'log_volatility_2',
+
+'DJ_return_1', 'log_volume_1', 'log_volatility_1'], dtype='object')
+
+We now reshape the data.
+
+In[100]: X_rnn = X.to_numpy().reshape((-1,5,3))
+
+X_rnn.shape
+
+Out[100]:(6046, 5, 3)
+
+Byspecifyingthefirstsizeas-1,numpy.reshape()deducesitssizebasedon the remaining arguments.
+
+Nowwearereadytoproceedwiththe RNN,whichuses 12 hiddenunits, and 10% dropout. After passing through the RNN, we extract the final time point as val[:,-1] in forward() below. This gets passed through a
+
+10% dropout and then flattened through a linear layer.
+
+In[101]: class NYSEModel(nn.Module): def __init__(self): super(NYSEModel, self).__init__() self.rnn = nn.RNN(3,
+
+12, batch_first=True) self.dense = nn.Linear(12, 1) self.dropout = nn.Dropout(0.1) def forward(self, x): val, h_n = self.rnn(x) val = self.dense(self.dropout(val[:,-1])) return torch.flatten(val) nyse_model = NYSEModel()
+
+We fit the model in a similar fashion to previous networks. We supply thefitfunctionwithtestdataasvalidationdata,sothatwhenwemonitor its progress and plot the history function we can see the progress on the test data. Of course we should not use this as a basis for early stopping, since then the test performance would be biased.
+
+We form the training dataset similar to our Hitters example.
+
+10.9 Lab: Deep Learning 463
+
+In[102]: datasets = [] for mask in [train, train]:
+
+∼
+
+X_rnn_t = torch.tensor(X_rnn[mask].astype(np.float 32))
+
+Y_t = torch.tensor(Y[mask].astype(np.float 32)) datasets.append(Tensor Dataset(X_rnn_t, Y_t)) nyse_train, nyse_test = datasets
+
+Following our usual pattern, we inspect the summary.
+
+In[103]: summary(nyse_model, input_data=X_rnn_t, col_names=['input_size',
+
+'output_size',
+
+'num_params'])
+
+Out[103]:====================================================================
+
+Layer (type:depth-idx) Input Shape Output Shape Param #
+
+====================================================================
+
+NYSEModel [1770, 5, 3] [1770] --
+
+RNN: 1-1 [1770, 5, 3] [1770, 5, 12] 204
+
+Dropout: 1-2 [1770, 12] [1770, 12] --
+
+Linear: 1-3 [1770, 12] [1770, 1] 13
+
+====================================================================
+
+Total params: 217
+
+Trainable params: 217
+
+We again put the two datasets into a data module, with a batch size of 64.
+
+In[104]: nyse_dm = Simple Data Module(nyse_train, nyse_test, num_workers=min(4, max_num_workers), validation=nyse_test, batch_size=64)
+
+We run some data through our model to be sure the sizes match up cor- rectly.
+
+In[105]: for idx, (x, y) in enumerate(nyse_dm.train_dataloader()): out = nyse_model(x) print(y.size(), out.size()) if idx >= 2: break torch.Size([64]) torch.Size([64]) torch.Size([64]) torch.Size([64]) torch.Size([64]) torch.Size([64])
+
+We follow our previous example for setting up a trainer for a regression problem, requesting the R2 metric to be be computed at each epoch.
+
+In[106]: nyse_optimizer = RMSprop(nyse_model.parameters(), lr=0.001) nyse_module = Simple Module.regression(nyse_model, optimizer=nyse_optimizer, metrics={'r 2':R2Score()})
+
+Fittingthemodelshouldbynowbefamiliar.Theresultsonthetestdata are very similar to the linear AR model.
+
+464 10. Deep Learning
+
+In[107]: nyse_trainer = Trainer(deterministic=True, max_epochs=200, callbacks=[Error Tracker()]) nyse_trainer.fit(nyse_module, datamodule=nyse_dm) nyse_trainer.test(nyse_module, datamodule=nyse_dm)
+
+Out[107]:[{'test_loss': 0.6141, 'test_r 2': 0.4172}]
+
+We could also fit a model without the nn.RNN() layer by just using a nn.Flatten() layer instead. This would be a nonlinear AR model. If in addition we excluded the hidden layer, this would be equivalent to our earlier linear AR model.
+
+Insteadwewillfitanonlinear ARmodelusingthefeatureset X_daythat includes the day_of_week indicators. To do so, we must first create our test and training datasets and a corresponding data module. This may seem a little burdensome, but is part of the general pipeline for torch.
+
+In[108]: datasets = [] for mask in [train, train]:
+
+∼
+
+X_day_t = torch.tensor( np.asarray(X_day[mask]).astype(np.float 32))
+
+Y_t = torch.tensor(np.asarray(Y[mask]).astype(np.float 32)) datasets.append(Tensor Dataset(X_day_t, Y_t)) day_train, day_test = datasets
+
+Creating a data module follows a familiar pattern.
+
+In[109]: day_dm = Simple Data Module(day_train, day_test, num_workers=min(4, max_num_workers), validation=day_test, batch_size=64)
+
+We build a Non Linear ARModel() that takes as input the 20 features and a hidden layer with 32 units. The remaining steps are familiar.
+
+In[110]: class Non Linear ARModel(nn.Module): def __init__(self): super(Non Linear ARModel, self).__init__() self._forward = nn.Sequential(nn.Flatten(), nn.Linear(20, 32), nn.Re LU(), nn.Dropout(0.5), nn.Linear(32, 1)) def forward(self, x): return torch.flatten(self._forward(x))
+
+In[111]: nl_model = Non Linear ARModel() nl_optimizer = RMSprop(nl_model.parameters(), lr=0.001) nl_module = Simple Module.regression(nl_model, optimizer=nl_optimizer, metrics={'r 2':R2Score()})
+
+10.10 Exercises 465
+
+We continue with the usual training steps, fit the model, and evaluate the test error. We see the test R2 is a slight improvement over the linear
+
+AR model that also includes day_of_week.
+
+In[112]: nl_trainer = Trainer(deterministic=True, max_epochs=20, callbacks=[Error Tracker()]) nl_trainer.fit(nl_module, datamodule=day_dm) nl_trainer.test(nl_module, datamodule=day_dm)
+
+Out[112]:[{'test_loss': 0.5625, 'test_r 2': 0.4662}]
+
+10.10 Exercises
+
+Conceptual
+
+1. Consider a neural network with two hidden layers: p=4 input units,
+
+2 units in the first hidden layer, 3 units in the second hidden layer, and a single output.
+
+(a) Draw a picture of the network, similar to Figures 10.1 or 10.4.
+
+(b) Write out an expression for f(X), assuming Re LU activation functions. Be as explicit as you can!
+
+(c) Now plug in some values for the coefficients and write out the value of f(X).
+
+(d) How many parameters are there?
+
+2. Considerthesoftmax functionin(10.13)(seealso(4.13)onpage 145) for modeling multinomial probabilities.
+
+(a) In (10.13), show that if we add a constant c to each of the z ,
+
+$ then the probability is unchanged.
+
+(b) In (4.13), show that if we add constants c , j = 0,1,...,p, to j eachofthecorrespondingcoefficientsforeachoftheclasses,then the predictions at any new point x are unchanged.
+
+This shows that the softmax function is over-parametrized. However, over- regularization and SGD typically constrain the solutions so that this parametrized is not a problem.
+
+3. Show that the negative multinomial log-likelihood (10.14) is equiva- lent to the negative log of the likelihood expression (4.5) when there are M =2 classes.
+
+4. Consider a CNN that takes in 32 32 grayscale images and has a
+
+× single convolution layer with three 5 5 convolution filters (without
+
+× boundary padding).
+
+(a) Draw a sketch of the input and first hidden layer similar to
+
+Figure 10.8.
+
+466 10. Deep Learning
+
+(b) How many parameters are in this model?
+
+(c) Explain how this model can be thought of as an ordinary feed- forwardneuralnetworkwiththeindividualpixelsasinputs,and with constraints on the weights in the hidden units. What are the constraints?
+
+(d) Iftherewerenoconstraints,thenhowmanyweightswouldthere be in the ordinary feed-forward neural network in (c)?
+
+5. In Table 10.2 on page 426, we see that the ordering of the three methods with respect to mean absolute error is different from the ordering with respect to test set R2. How can this be?
+
+Applied
+
+6. Consider the simple function R(β)=sin(β)+β/10.
+
+(a) Draw a graph of this function over the range β [ 6,6].
+
+∈ −
+
+(b) What is the derivative of this function?
+
+(c) Given β0 = 2.3, run gradient descent to find a local minimum of R(β)usingalearningrateofρ=0.1.Showeachofβ0,β1,...
+
+in your plot, as well as the final answer.
+
+(d) Repeat with β0 =1.4.
+
+7. Fit a neural network to the Default data. Use a single hidden layer with 10 units,anddropoutregularization.Havealookat Labs 10.9.1–
+
+10.9.2 for guidance. Compare the classification performance of your model with that of linear logistic regression.
+
+8. From your collection of personal photographs, pick 10 images of an- imals (such as dogs, cats, birds, farm animals, etc.). If the subject doesnotoccupyareasonablepartoftheimage,thencroptheimage.
+
+Now use a pretrained image classification CNN as in Lab 10.9.4 to predict the class of each of your images, and report the probabilities for the top five predicted classes for each image.
+
+9. Fit a lag-5 autoregressive model to the NYSE data, as described in the text and Lab 10.9.6. Refit the model with a 12-level factor repre- senting the month. Does this factor improve the performance of the model?
+
+10. In Section 10.9.6, we showed how to fit a linear AR model to the
+
+NYSE data using the Linear Regression() function. However, we also mentioned that we can “flatten” the short sequences produced for the RNN model in order to fit a linear AR model. Use this latter approachtofitalinear ARmodeltothe NYSEdata.Comparethetest
+
+R2 ofthislinear ARmodeltothatofthelinear ARmodelthatwefit inthelab.Whataretheadvantages/disadvantagesofeachapproach?
+
+11. Repeat the previous exercise, but now fit a nonlinear AR model by
+
+“flattening” the short sequences produced for the RNN model.
+
+10.10 Exercises 467
+
+12. Consider the RNN fit to the NYSE data in Section 10.9.6. Modify the code to allow inclusion of the variable day_of_week, and fit the RNN.
+
+Compute the test R2.
+
+13. Repeat the analysis of Lab 10.9.5 on the IMDb data using a similarly structured neural network. We used 16 hidden units at each of two hidden layers. Explore the effect of increasing this to 32 and 64 units per layer, with and without 30% dropout regularization.
