@@ -47,7 +47,7 @@ def save_chunks(chunks,output_file):
 
 if __name__=="__main__":
     # Load the clean text
-    with open("chapter10_clean.txt","r",encoding="utf-8") as f:
+    with open("data\extracted_data\chapter10_clean.txt","r",encoding="utf-8") as f:
         text=f.read()
     
     print("Chunking Chapter 10...")
@@ -56,6 +56,6 @@ if __name__=="__main__":
     print(f"Generated {len(chunks)} chunks.")
     
     # Save chunks to file
-    chunk_data=save_chunks(chunks,"chunks/chapter10_chunks.json")
+    chunk_data=save_chunks(chunks,"data\chunks\chapter10_chunks.json")
     
-    print("Chunks saved to chunks/chapter10_chunks.json")
+    print("Chunks saved to data\chunks\chapter10_chunks.json")

@@ -19,16 +19,16 @@ def clean_text(text):
     
     return text.strip()
 
-def extract_chapter_9_clean(pdf_path):
+def extract_chapter_10_clean(pdf_path):
     """
-    Extract Chapter 9 using pdfplumber for better text extraction.
+    Extract Chapter 10 using pdfplumber for better text extraction.
     """
     text = ""
     
     with pdfplumber.open(pdf_path) as pdf:
-        # Pages 374-405 (0-indexed: 373-404)
-        start_page = 373
-        end_page = 405
+        # Pages 406-475 (0-indexed: 405-474)
+        start_page = 405
+        end_page = 474
         
         for page_num in range(start_page, min(end_page, len(pdf.pages))):
             page = pdf.pages[page_num]
@@ -42,13 +42,13 @@ def extract_chapter_9_clean(pdf_path):
     return text
 
 if __name__ == "__main__":
-    pdf_path = r"C:\Users\Ibrahim\Documents\Career\Projects\RAG_Project\ISLR.pdf"
+    pdf_path = r"data\raw\ISLR.pdf"
     
-    print("Extracting Chapter 9 with pdfplumber...")
-    chapter_text = extract_chapter_9_clean(pdf_path)
+    print("Extracting Chapter 10 with pdfplumber...")
+    chapter_text = extract_chapter_10_clean(pdf_path)
     
     # Save to file
-    with open("chapter9_clean.txt", "w", encoding="utf-8") as f:
+    with open("chapter10_clean.txt", "w", encoding="utf-8") as f:
         f.write(chapter_text)
     
     # Basic stats

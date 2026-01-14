@@ -120,16 +120,16 @@ if __name__ == "__main__":
     
     # Initialize RAG system
     rag = RAGSystem(
-        embeddings_file="embeddings/chapter10_embeddings.json",
+        embeddings_file="data\embeddings\chapter10_embeddings.json", #replace with respective path for other chapters
         api_key=api_key
     )
     
     # Test questions
     test_questions = [
-        #"What is a neural nework?",
-        #"How does backpropagation work?",
-        #"what are activation functions?",
-        #"what are best networks for classification/identification?"
+        "What is a neural nework?",
+        "How does backpropagation work?",
+        "what are activation functions?",
+        "what are best networks for classification/identification?"
         #"What is a support vector?",
         #"What is the maximal margin hyperplane?",
         #"Explain the optimization problem for support vector classifier"

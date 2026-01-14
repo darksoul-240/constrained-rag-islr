@@ -54,9 +54,8 @@ def save_embeddings(embeddings_data, output_file):
 
 if __name__ == "__main__":
     # Load chunks
-    with open("chunks/chapter10_chunks.json", "r", encoding="utf-8") as f:
-        chunks = json.load(f)
-    
+    with open("data\chunks\chapter10_chunks.json", "r", encoding="utf-8") as f:   #replace with respective path for other chapters
+        chunks = json.load(f)   
     print(f"Loaded {len(chunks)} chunks")
     print("\nIMPORTANT: You need to paste your Gemini API key now.")
     print("(It won't be saved anywhere, just used for this session)")
@@ -72,7 +71,7 @@ if __name__ == "__main__":
     embeddings_data = generate_embeddings(chunks, api_key)
     
     # Save embeddings
-    output_file = "embeddings/chapter10_embeddings.json"
+    output_file = "data\embeddings\chapter10_embeddings.json"
     save_embeddings(embeddings_data, output_file)
     
     print(f"\n[OK] Generated {len(embeddings_data)} embeddings")

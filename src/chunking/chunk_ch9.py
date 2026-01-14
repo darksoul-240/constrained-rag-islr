@@ -52,7 +52,7 @@ def save_chunks(chunks, output_file):
 
 if __name__ == "__main__":
     # Load the clean text
-    with open("chapter9_clean.txt", "r", encoding="utf-8") as f:
+    with open("data\extracted_data\chapter9_clean.txt", "r", encoding="utf-8") as f:
         text = f.read()
     
     print("Chunking Chapter 9...")
@@ -61,12 +61,12 @@ if __name__ == "__main__":
     print(f"[OK] Created {len(chunks)} chunks")
     
     # Save chunks
-    chunk_data = save_chunks(chunks, "chunks/chapter9_chunks.json")
+    chunk_data = save_chunks(chunks, "data\chunks\chapter9_chunks.json")
     
     # Stats
     avg_size = sum(c['char_count'] for c in chunk_data) / len(chunk_data)
     print(f"[OK] Average chunk size: {avg_size:.0f} characters")
-    print(f"[OK] Saved to chunks/chapter9_chunks.json")
+    print(f"[OK] Saved to data\chunks\chapter9_chunks.json")
     
     # Show first chunk as sample
     print("\n--- FIRST CHUNK (preview) ---")

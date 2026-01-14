@@ -98,7 +98,7 @@ if __name__ == "__main__":
     
     # Initialize retriever
     retriever = RAGRetriever(
-        embeddings_file="embeddings/chapter10_embeddings.json",
+        embeddings_file="data\embeddings\chapter10_embeddings.json", #replace with respective path for other chapters
         api_key=api_key
     )
     
